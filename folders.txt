@@ -1,0 +1,42 @@
+.
+├── artifacts
+│   ├── api-server
+│   │   └── src
+│   │       ├── lib
+│   │       ├── middlewares
+│   │       └── routes
+│   ├── mahathi-tailor-shop
+│   │   ├── app
+│   │   │   ├── account
+│   │   │   ├── components
+│   │   │   ├── data
+│   │   │   ├── hooks
+│   │   │   ├── login
+│   │   │   ├── products
+│   │   │   │   └── [id]
+│   │   │   ├── register
+│   │   │   └── shop
+│   │   ├── lib
+│   │   └── public
+│   └── mockup-sandbox
+│       └── src
+│           ├── components
+│           │   └── ui
+│           ├── hooks
+│           └── lib
+├── lib
+│   ├── api-client-react
+│   │   └── src
+│   │       └── generated
+│   ├── api-spec
+│   ├── api-zod
+│   │   └── src
+│   │       └── generated
+│   │           └── types
+│   └── db
+│       └── src
+│           └── schema
+└── scripts
+    └── src
+
+40 directories

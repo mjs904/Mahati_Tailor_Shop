@@ -1,0 +1,62 @@
+@import url("https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,500;0,600;1,500;1,600&display=swap");
+@import "tailwindcss";
+
+:root {
+  --background: #faf8f5;
+  --foreground: #171717;
+  --surface: #ffffff;
+  --muted: #696663;
+  --line: #e8e4df;
+  --blue: #1296f3;
+  --indigo: #4f6bff;
+  --purple: #8a3dff;
+  --magenta: #d600c7;
+  --gold: #d4af37;
+  --app-font-sans: "Plus Jakarta Sans", "Avenir Next", sans-serif;
+  --app-font-serif: "Playfair Display", Georgia, serif;
+  --app-font-mono: "DM Mono", "SFMono-Regular", Consolas, monospace;
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--app-font-sans);
+}
+button, input, select { font: inherit; }
+button { cursor: pointer; }
+.font-display { font-family: var(--app-font-serif); }
+.font-label { font-family: var(--app-font-mono); }
+
+.market-shell {
+  background:
+    radial-gradient(circle at 86% 8%, rgba(212, 175, 55, .10), transparent 24rem),
+    var(--background);
+}
+.market-container { width: min(100% - 2rem, 1240px); margin-inline: auto; }
+.gradient-ink { background: linear-gradient(110deg, var(--blue), var(--indigo) 42%, var(--purple) 76%, var(--magenta)); }
+.gradient-text {
+  background: linear-gradient(110deg, var(--blue), var(--purple) 60%, var(--magenta));
+  background-clip: text; -webkit-background-clip: text; color: transparent;
+}
+.hairline { border-color: var(--line); }
+.product-image { transition: transform 350ms cubic-bezier(.2,.75,.2,1); }
+.product-card:hover .product-image { transform: scale(1.045); }
+.lift { transition: transform 220ms ease, box-shadow 220ms ease; }
+.lift:hover { transform: translateY(-3px); box-shadow: 0 14px 30px rgba(23,23,23,.08); }
+
+@keyframes reveal-up { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+.reveal-up { animation: reveal-up .6s ease both; }
+.reveal-up:nth-child(2) { animation-delay: 70ms; }
+.reveal-up:nth-child(3) { animation-delay: 140ms; }
+.reveal-up:nth-child(4) { animation-delay: 210ms; }
+
+@media (max-width: 767px) {
+  .market-container { width: min(100% - 1.25rem, 1240px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+}

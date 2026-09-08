@@ -1,0 +1,27 @@
+{
+  "name": "@workspace/mahathi-tailor-shop",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev --hostname 0.0.0.0 --port $PORT",
+    "build": "next build",
+    "start": "next start --hostname 0.0.0.0 --port $PORT",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@insforge/sdk": "^1.5.2",
+    "lucide-react": "^0.468.0",
+    "next": "^16.3.4",
+    "react": "catalog:",
+    "react-dom": "catalog:"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.3.3",
+    "@types/node": "catalog:",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "tailwindcss": "catalog:",
+    "typescript": "~5.9.3"
+  }
+}

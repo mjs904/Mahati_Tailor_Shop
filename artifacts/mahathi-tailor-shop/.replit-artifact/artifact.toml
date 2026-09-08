@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "Mahathi Tailor Shop"
+description = "A shopping-first Indian fashion marketplace with Mahathi tailoring and made-to-measure services."
+version = "1.0.0"
+id = "artifacts/mahathi-tailor-shop"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 23244
+
+[services.development]
+run = "pnpm --filter @workspace/mahathi-tailor-shop run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/mahathi-tailor-shop", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/mahathi-tailor-shop/dist"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "23244"
+BASE_PATH = "/"
