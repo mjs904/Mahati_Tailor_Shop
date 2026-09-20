@@ -1,6 +1,7 @@
 {
   "name": "workspace",
   "version": "0.0.0",
+  "packageManager": "pnpm@9.15.9",
   "license": "MIT",
   "scripts": {
     "dev": "pnpm --filter @workspace/mahathi-tailor-shop run dev",
@@ -14,7 +15,6 @@
   },
   "devDependencies": {
     "prettier": "^3.9.6",
-    "typescript": "~5.9.3",
-    "vercel": "^59.23.2"
+    "typescript": "~5.9.3"
   }
 }
