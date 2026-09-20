@@ -1,14 +1,16 @@
 'use client';
 
+import Link from 'next/link';
 import {
   ChevronDown,
   Filter,
   LoaderCircle,
   Search,
   SlidersHorizontal,
+  Sparkles,
   X,
 } from 'lucide-react';
-import { useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useSearchParams } from 'next/navigation';
 import ProductCard from './product-card';
 import { getInsforgeErrorMessage } from '../../lib/insforge';
@@ -24,6 +26,17 @@ export default function ShopContent() {
   const [availability, setAvailability] = useState('All availability');
   const [sort, setSort] = useState('Recommended');
   const [mobileFilters, setMobileFilters] = useState(false);
+
+  useEffect(() => {
+    const urlCategory = params.get('category');
+    if (urlCategory) {
+      setCategory(urlCategory);
+    }
+    const urlQuery = params.get('q');
+    if (urlQuery !== null) {
+      setQuery(urlQuery);
+    }
+  }, [params]);
 
   const result = useMemo(() => {
     const lowered = query.toLowerCase().trim();
@@ -227,14 +240,42 @@ export default function ShopContent() {
     return (
       <main className="market-shell min-h-[100dvh]">
         <div className="market-container flex min-h-[620px] items-center justify-center">
-          <div className="max-w-[420px] rounded-2xl border border-dashed border-[#d8d2ca] bg-white px-7 py-8 text-center">
+          <div className="max-w-[460px] rounded-2xl border border-dashed border-[#d8d2ca] bg-white p-8 text-center shadow-sm">
             <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[#e8e8f7] text-[#4f6bff]">
-              <Search size={20} />
+              <Sparkles size={20} />
             </span>
-            <h1 className="mt-4 text-xl font-extrabold">The collection is coming soon</h1>
+            <h1 className="mt-4 text-xl font-extrabold text-[#171717]">New Collection Arriving Soon</h1>
             <p className="mt-2 text-[12px] leading-5 text-[#77736f]">
-              We are preparing the Mahathi collection. Please check back soon.
+              We are carefully curating and cataloging handcrafted pieces for our online boutique. In the meantime, our bespoke tailoring and bridal studios are fully open!
             </p>
+            <div className="mt-6 flex flex-wrap items-center justify-center gap-2.5">
+              <Link
+                href="/services/tailoring"
+                className="rounded-lg bg-[#171717] px-4 py-2.5 text-[11px] font-bold text-white transition-opacity hover:opacity-90"
+              >
+                Custom Tailoring
+              </Link>
+              <Link
+                href="/services/bridal"
+                className="rounded-lg border border-[#ddd8d1] bg-white px-4 py-2.5 text-[11px] font-bold text-[#171717] transition-colors hover:border-[#4f6bff] hover:text-[#4f6bff]"
+              >
+                Bridal & Aari Work
+              </Link>
+              <Link
+                href="/appointments"
+                className="rounded-lg border border-[#ddd8d1] bg-white px-4 py-2.5 text-[11px] font-bold text-[#171717] transition-colors hover:border-[#4f6bff] hover:text-[#4f6bff]"
+              >
+                Book Studio Fitting
+              </Link>
+            </div>
+            <div className="mt-6 border-t border-[#f0ece7] pt-4">
+              <p className="text-[11px] text-[#96918c]">
+                Store Manager?{' '}
+                <Link href="/admin" className="font-bold text-[#4f6bff] hover:underline">
+                  Open Studio Admin to add products →
+                </Link>
+              </p>
+            </div>
           </div>
         </div>
       </main>

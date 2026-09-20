@@ -14,9 +14,14 @@ export const dynamicParams = false;
 export async function generateStaticParams() {
   try {
     const catalog = await fetchCatalog();
-    return catalog.products.map((product) => ({ id: product.id }));
+    const ids = catalog.products.map((product) => ({ id: product.id }));
+    const slugs = catalog.products
+      .filter((p) => p.slug && p.slug !== p.id)
+      .map((p) => ({ id: p.slug as string }));
+    const all = [...ids, ...slugs];
+    return all.length > 0 ? all : [{ id: 'preview' }];
   } catch {
-    return [];
+    return [{ id: 'preview' }];
   }
 }
 

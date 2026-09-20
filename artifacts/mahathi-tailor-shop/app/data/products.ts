@@ -2,6 +2,7 @@ import { getInsforgeTable, INSFORGE_TABLES } from '../../lib/insforge';
 
 export type Product = {
   id: string;
+  slug?: string;
   name: string;
   description: string;
   category: string;
@@ -200,7 +201,7 @@ function extractImage(record: RawRecord, fallback: string): string {
   return fallback;
 }
 
-function extractSizes(record: RawRecord): string[] {
+function extractSizes(record: RawRecord, categoryName = ''): string[] {
   const rawSizes = firstValue(record, [
     'sizes',
     'available_sizes',
@@ -208,27 +209,39 @@ function extractSizes(record: RawRecord): string[] {
     'size',
   ]);
 
-  if (Array.isArray(rawSizes)) {
+  if (Array.isArray(rawSizes) && rawSizes.length > 0) {
     return rawSizes.map((value) => stringValue(value)).filter(Boolean);
   }
-  if (typeof rawSizes === 'string') {
+  if (typeof rawSizes === 'string' && rawSizes.trim()) {
     const value = rawSizes.trim();
-    if (!value) {
-      return ['Free size'];
-    }
     try {
       const parsed = JSON.parse(value);
-      if (Array.isArray(parsed)) {
+      if (Array.isArray(parsed) && parsed.length > 0) {
         return parsed.map((item) => stringValue(item)).filter(Boolean);
       }
     } catch {
       // Comma-separated size strings are handled below.
     }
-    return value
+    const parts = value
       .split(',')
       .map((item) => item.trim())
       .filter(Boolean);
+    if (parts.length > 0) return parts;
   }
+
+  const catLower = categoryName.toLowerCase();
+  if (catLower.includes('saree') || catLower.includes('dupatta')) {
+    return ['Free size'];
+  }
+  if (
+    catLower.includes('blouse') ||
+    catLower.includes('kurta') ||
+    catLower.includes('dress') ||
+    catLower.includes('lehenga')
+  ) {
+    return ['S', 'M', 'L', 'XL', 'Custom'];
+  }
+
   return ['Free size'];
 }
 
@@ -296,6 +309,7 @@ function normalizeProduct(
 
   return {
     id,
+    slug: stringValue(firstValue(record, ['slug', 'handle'])) || undefined,
     name,
     description: stringValue(
       firstValue(record, ['description', 'short_description', 'summary']),
@@ -329,7 +343,7 @@ function normalizeProduct(
       ]),
       'In stock',
     ),
-    sizes: extractSizes(record),
+    sizes: extractSizes(record, category.name),
     image: extractImage(record, '/mahathi-atelier.jpg'),
     badge:
       stringValue(firstValue(record, ['badge', 'label', 'tag'])) || undefined,
@@ -400,8 +414,35 @@ export async function fetchProductById(id: string): Promise<{
   error: unknown | null;
 }> {
   const catalog = await fetchCatalog();
+  const search = id.toLowerCase().trim();
+  let found = catalog.products.find(
+    (product) =>
+      product.id.toLowerCase() === search ||
+      (product.slug && product.slug.toLowerCase() === search),
+  );
+
+  if (!found) {
+    try {
+      const { data } = await getInsforgeTable(INSFORGE_TABLES.products)
+        .select()
+        .or(`id.eq.${id},slug.eq.${id}`)
+        .limit(1);
+
+      if (data && data.length > 0) {
+        const categoryMap = new Map<string, string>();
+        catalog.categories.forEach((c) => {
+          categoryMap.set(c.id.toLowerCase(), c.name);
+          if (c.slug) categoryMap.set(c.slug.toLowerCase(), c.name);
+        });
+        found = normalizeProduct(asRecord(data[0]), categoryMap) || undefined;
+      }
+    } catch {
+      // ignore
+    }
+  }
+
   return {
-    product: catalog.products.find((product) => product.id === id) || null,
+    product: found || null,
     error: catalog.error,
   };
 }

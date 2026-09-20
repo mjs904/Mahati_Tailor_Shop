@@ -3,7 +3,10 @@ import {
   type InsForgeClient,
 } from "@insforge/sdk";
 
-const insforgeUrl = process.env.NEXT_PUBLIC_INSFORGE_URL?.trim();
+const insforgeUrl = process.env.NEXT_PUBLIC_INSFORGE_URL?.trim().replace(
+  /\/+$/,
+  '',
+);
 const insforgeAnonKey = process.env.NEXT_PUBLIC_INSFORGE_ANON_KEY?.trim();
 
 let insforgeClient: InsForgeClient | undefined;
@@ -140,6 +143,55 @@ export function logoutUser() {
 
 export function createProfile(profile: ProfileRecord) {
   return getInsforgeTable(INSFORGE_TABLES.profiles).insert(profile);
+}
+
+/**
+ * Ensures a valid record exists in the 'profiles' table and returns its UUID.
+ * If user is authenticated, returns user's existing ID.
+ * If guest, creates a guest profile row so foreign keys (orders, appointments,
+ * tailoring requests) are properly satisfied in Postgres.
+ */
+export async function ensureProfileId(details: {
+  id?: string | null;
+  name: string;
+  phone: string;
+  email?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  pincode?: string;
+}): Promise<string> {
+  if (details.id && details.id !== '00000000-0000-0000-0000-000000000000') {
+    return details.id;
+  }
+
+  let guestId: string;
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    guestId = crypto.randomUUID();
+  } else {
+    guestId = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+      const r = (Math.random() * 16) | 0;
+      const v = c === 'x' ? r : (r & 0x3) | 0x8;
+      return v.toString(16);
+    });
+  }
+
+  try {
+    await getInsforgeTable(INSFORGE_TABLES.profiles).insert({
+      id: guestId,
+      name: details.name?.trim() || 'Boutique Client',
+      phone: details.phone?.trim() || '9999999999',
+      email: details.email?.trim() || `${guestId.slice(0, 8)}@guest.mahathitailor.in`,
+      address: details.address?.trim() || null,
+      city: details.city?.trim() || 'Hyderabad',
+      state: details.state?.trim() || 'Telangana',
+      pincode: details.pincode?.trim() || '500034',
+    });
+  } catch (err) {
+    console.warn('ensureProfileId note:', err);
+  }
+
+  return guestId;
 }
 
 /**

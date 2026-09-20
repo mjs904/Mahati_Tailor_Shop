@@ -1,3 +1,0 @@
-- [Next.js artifact foundation](next-artifact-foundation.md) — remove the scaffold’s empty pages directory when switching a web artifact to the App Router.
-- [Marketplace foundation](marketplace-foundation.md) — keep initial catalog browsing client-side until auth, persistence, payments, and admin are explicitly requested.
-- [Next dev preview origins](next-dev-preview-origins.md) — proxied HMR may require exact Replit and loopback origins, not only a wildcard.

@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
 import './globals.css';
+import { CartProvider } from './context/cart-context';
+import { WishlistProvider } from './context/wishlist-context';
 
 export const metadata: Metadata = {
   title: 'Mahathi Tailor Shop',
@@ -17,7 +19,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        <WishlistProvider>
+          <CartProvider>{children}</CartProvider>
+        </WishlistProvider>
+      </body>
     </html>
   );
-}
+}

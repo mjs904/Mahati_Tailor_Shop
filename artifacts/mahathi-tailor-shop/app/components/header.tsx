@@ -2,13 +2,15 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Heart, Menu, Search, ShoppingBag, UserRound, X } from 'lucide-react';
+import { CalendarDays, Heart, Menu, Scissors, Search, ShoppingBag, Sparkles, UserRound, X } from 'lucide-react';
 import { FormEvent, useEffect, useState } from 'react';
 import {
   getCurrentSession,
   isInsforgeConfigured,
   onAuthStateChange,
 } from '../../lib/insforge';
+import { useCart } from '../context/cart-context';
+import { useWishlist } from '../context/wishlist-context';
 
 type CurrentUser = Awaited<ReturnType<typeof getCurrentSession>>['user'];
 
@@ -17,24 +19,11 @@ export default function Header() {
   const pathname = usePathname();
   const [search, setSearch] = useState('');
   const [menuOpen, setMenuOpen] = useState(false);
-  const [cartCount, setCartCount] = useState(0);
-  const [wishCount, setWishCount] = useState(0);
   const [authUser, setAuthUser] = useState<CurrentUser>(null);
   const [authChecked, setAuthChecked] = useState(false);
 
-  useEffect(() => {
-    const sync = () => {
-      setCartCount(Number(window.sessionStorage.getItem('mahathi-cart-count') || 0));
-      setWishCount(Number(window.localStorage.getItem('mahathi-wishlist-count') || 0));
-    };
-    sync();
-    window.addEventListener('mahathi-cart-updated', sync);
-    window.addEventListener('mahathi-wishlist-updated', sync);
-    return () => {
-      window.removeEventListener('mahathi-cart-updated', sync);
-      window.removeEventListener('mahathi-wishlist-updated', sync);
-    };
-  }, []);
+  const { itemCount } = useCart();
+  const { count: wishCount } = useWishlist();
 
   useEffect(() => {
     if (!isInsforgeConfigured()) {
@@ -79,9 +68,9 @@ export default function Header() {
     ['Blouses', '/shop?category=Blouses'],
     ['Bridal', '/shop?category=Bridal'],
     ['Aari Work', '/shop?category=Aari+Work'],
-    ['Embroidery', '/shop?category=Embroidery'],
-    ['Kids', '/shop?category=Kids'],
-    ['Accessories', '/shop?category=Accessories'],
+    ['Tailoring', '/services/tailoring'],
+    ['Appointments', '/appointments'],
+    ['Measurements', '/measurements'],
   ];
 
   return (
@@ -98,29 +87,141 @@ export default function Header() {
               <small className="font-label text-[8px] uppercase tracking-[.16em] text-[#696663]">tailor shop</small>
             </span>
           </Link>
-          <form onSubmit={submitSearch} className="relative order-5 basis-full md:order-none md:ml-5 md:basis-auto md:max-w-[430px] md:flex-1">
+
+          <form onSubmit={submitSearch} className="relative order-5 basis-full md:order-none md:ml-5 md:basis-auto md:max-w-[400px] md:flex-1">
             <Search size={17} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#696663]" />
-            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search sarees, kurtas, Aari work..." className="h-11 w-full rounded-xl border border-[#ddd8d1] bg-white pl-11 pr-4 text-[12px] outline-none transition-colors placeholder:text-[#96918c] focus:border-[#4f6bff]" aria-label="Search products" />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search sarees, kurtas, Aari work..."
+              className="h-11 w-full rounded-xl border border-[#ddd8d1] bg-white pl-11 pr-4 text-[12px] outline-none transition-colors placeholder:text-[#96918c] focus:border-[#4f6bff]"
+              aria-label="Search products"
+            />
           </form>
+
           <nav className="hidden flex-1 items-center justify-end gap-5 lg:flex">
             <Link href="/shop" className={`text-[11px] font-bold ${pathname === '/shop' ? 'text-[#4f6bff]' : 'text-[#494643] hover:text-[#4f6bff]'}`}>Shop</Link>
-            <Link href="/#services" className="text-[11px] font-bold text-[#494643] hover:text-[#4f6bff]">Tailoring</Link>
-            <Link href="/#bridal" className="text-[11px] font-bold text-[#494643] hover:text-[#4f6bff]">Bridal</Link>
+            <Link href="/services/tailoring" className={`text-[11px] font-bold ${pathname.startsWith('/services/tailoring') ? 'text-[#4f6bff]' : 'text-[#494643] hover:text-[#4f6bff]'}`}>Tailoring</Link>
+            <Link href="/services/bridal" className={`text-[11px] font-bold ${pathname.startsWith('/services/bridal') ? 'text-[#4f6bff]' : 'text-[#494643] hover:text-[#4f6bff]'}`}>Bridal</Link>
+            <Link href="/appointments" className={`text-[11px] font-bold ${pathname === '/appointments' ? 'text-[#4f6bff]' : 'text-[#494643] hover:text-[#4f6bff]'}`}>Appointments</Link>
           </nav>
+
           <div className="ml-auto flex shrink-0 items-center gap-1.5 md:ml-0">
-            <Link href="/#wishlist" className="relative flex h-10 w-10 items-center justify-center rounded-lg text-[#494643] hover:bg-white" aria-label="Wishlist"><Heart size={18} strokeWidth={1.8} />{wishCount > 0 && <span className="absolute right-0.5 top-0.5 min-w-3.5 rounded-full bg-[#d600c7] px-1 text-center text-[8px] font-bold text-white">{wishCount}</span>}</Link>
-            <Link href="/#cart" className="relative flex h-10 w-10 items-center justify-center rounded-lg text-[#494643] hover:bg-white" aria-label="Cart"><ShoppingBag size={18} strokeWidth={1.8} />{cartCount > 0 && <span className="absolute right-0.5 top-0.5 min-w-3.5 rounded-full bg-[#4f6bff] px-1 text-center text-[8px] font-bold text-white">{cartCount}</span>}</Link>
-            <Link href={authChecked && authUser ? '/account' : '/login'} className="flex h-10 items-center justify-center gap-2 rounded-lg px-2 text-[#494643] hover:bg-white" aria-label="Account" title={authUser?.email || 'Log in'}><UserRound size={18} strokeWidth={1.8} /><span className="hidden text-[10px] font-bold xl:inline">{authUser ? 'Account' : 'Log in'}</span></Link>
-            <button type="button" className="flex h-10 w-10 items-center justify-center rounded-lg text-[#494643] hover:bg-white lg:hidden" aria-label={menuOpen ? 'Close menu' : 'Open menu'} onClick={() => setMenuOpen((value) => !value)}>{menuOpen ? <X size={20} /> : <Menu size={20} />}</button>
+            <Link
+              href="/wishlist"
+              className="relative flex h-10 w-10 items-center justify-center rounded-lg text-[#494643] transition-colors hover:bg-white"
+              aria-label="Wishlist"
+            >
+              <Heart size={18} strokeWidth={1.8} className={wishCount > 0 ? 'text-[#d600c7]' : ''} />
+              {wishCount > 0 && (
+                <span className="absolute right-0.5 top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#d600c7] px-1 text-[9px] font-bold text-white">
+                  {wishCount}
+                </span>
+              )}
+            </Link>
+
+            <Link
+              href="/cart"
+              className="relative flex h-10 w-10 items-center justify-center rounded-lg text-[#494643] transition-colors hover:bg-white"
+              aria-label="Cart"
+            >
+              <ShoppingBag size={18} strokeWidth={1.8} className={itemCount > 0 ? 'text-[#4f6bff]' : ''} />
+              {itemCount > 0 && (
+                <span className="absolute right-0.5 top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#4f6bff] px-1 text-[9px] font-bold text-white">
+                  {itemCount}
+                </span>
+              )}
+            </Link>
+
+            <Link
+              href={authChecked && authUser ? '/account' : '/login'}
+              className="flex h-10 items-center justify-center gap-2 rounded-lg px-2.5 text-[#494643] transition-colors hover:bg-white"
+              aria-label="Account"
+              title={authUser?.email || 'Log in'}
+            >
+              <UserRound size={18} strokeWidth={1.8} />
+              <span className="hidden text-[10px] font-bold xl:inline">{authUser ? 'Account' : 'Log in'}</span>
+            </Link>
+
+            <Link
+              href="/admin"
+              className="hidden h-10 items-center justify-center rounded-lg border border-[#e8e4df] bg-white px-2.5 text-[10px] font-bold text-[#696663] transition-colors hover:border-[#171717] hover:text-[#171717] md:flex"
+              title="Admin Portal"
+            >
+              Admin
+            </Link>
+
+            <button
+              type="button"
+              className="flex h-10 w-10 items-center justify-center rounded-lg text-[#494643] hover:bg-white lg:hidden"
+              aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+              onClick={() => setMenuOpen((value) => !value)}
+            >
+              {menuOpen ? <X size={20} /> : <Menu size={20} />}
+            </button>
           </div>
         </div>
+
         <div className="border-t border-[#e8e4df] bg-white">
           <div className="market-container flex h-10 items-center gap-6 overflow-x-auto whitespace-nowrap">
-            {navItems.map(([label, href]) => <Link key={label} href={href} className="shrink-0 text-[10px] font-bold text-[#696663] transition-colors hover:text-[#4f6bff]">{label}</Link>)}
-            <span className="ml-auto shrink-0 font-label text-[9px] uppercase tracking-[.12em] text-[#d600c7]">New: festive edit</span>
+            {navItems.map(([label, href]) => (
+              <Link
+                key={label}
+                href={href}
+                className="shrink-0 text-[10px] font-bold text-[#696663] transition-colors hover:text-[#4f6bff]"
+              >
+                {label}
+              </Link>
+            ))}
+            <Link
+              href="/admin"
+              className="shrink-0 text-[10px] font-bold text-[#8a3dff] transition-colors hover:underline lg:hidden"
+            >
+              Admin Portal
+            </Link>
+            <span className="ml-auto shrink-0 font-label text-[9px] uppercase tracking-[.12em] text-[#d600c7]">
+              New: festive edit
+            </span>
           </div>
         </div>
-        {menuOpen && <div className="border-t border-[#e8e4df] bg-white p-4 lg:hidden"><div className="market-container grid grid-cols-2 gap-1">{navItems.map(([label, href]) => <Link key={label} href={href} onClick={() => setMenuOpen(false)} className="rounded-lg px-3 py-3 text-[12px] font-bold text-[#494643] hover:bg-[#faf8f5]">{label}</Link>)}</div></div>}
+
+        {menuOpen && (
+          <div className="border-t border-[#e8e4df] bg-white p-4 lg:hidden">
+            <div className="market-container grid grid-cols-2 gap-2">
+              {navItems.map(([label, href]) => (
+                <Link
+                  key={label}
+                  href={href}
+                  onClick={() => setMenuOpen(false)}
+                  className="rounded-lg px-3 py-2.5 text-[12px] font-bold text-[#494643] hover:bg-[#faf8f5]"
+                >
+                  {label}
+                </Link>
+              ))}
+              <Link
+                href="/cart"
+                onClick={() => setMenuOpen(false)}
+                className="rounded-lg px-3 py-2.5 text-[12px] font-bold text-[#4f6bff] hover:bg-[#faf8f5]"
+              >
+                Shopping Bag ({itemCount})
+              </Link>
+              <Link
+                href="/wishlist"
+                onClick={() => setMenuOpen(false)}
+                className="rounded-lg px-3 py-2.5 text-[12px] font-bold text-[#d600c7] hover:bg-[#faf8f5]"
+              >
+                Wishlist ({wishCount})
+              </Link>
+              <Link
+                href="/admin"
+                onClick={() => setMenuOpen(false)}
+                className="col-span-2 rounded-lg border border-[#e8e4df] px-3 py-2 text-center text-[12px] font-bold text-[#171717]"
+              >
+                Store Admin Portal
+              </Link>
+            </div>
+          </div>
+        )}
       </header>
     </>
   );

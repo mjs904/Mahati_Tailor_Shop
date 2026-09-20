@@ -249,6 +249,31 @@ export default function AuthForm({ mode }: { mode: AuthMode }) {
           return;
         }
 
+        if (result.data?.accessToken || (result.data as any)?.session) {
+          if (result.data?.user?.id) {
+            try {
+              await createProfile({
+                id: result.data.user.id,
+                name,
+                email,
+                phone,
+              });
+            } catch (pErr) {
+              console.warn('Profile create note:', pErr);
+            }
+          }
+          setRegistrationComplete(true);
+          setStatus({
+            tone: 'success',
+            message: 'Account created successfully. Redirecting to your account…',
+          });
+          setTimeout(() => {
+            router.replace('/account');
+            router.refresh();
+          }, 800);
+          return;
+        }
+
         setRegisterStep('verification');
         setVerificationCode('');
         setStatus({
