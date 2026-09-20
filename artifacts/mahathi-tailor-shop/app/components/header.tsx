@@ -71,6 +71,7 @@ export default function Header() {
     ['Tailoring', '/services/tailoring'],
     ['Appointments', '/appointments'],
     ['Measurements', '/measurements'],
+    ['Admin Console', '/admin'],
   ];
 
   return (
@@ -104,6 +105,7 @@ export default function Header() {
             <Link href="/services/tailoring" className={`text-[11px] font-bold ${pathname.startsWith('/services/tailoring') ? 'text-[#4f6bff]' : 'text-[#494643] hover:text-[#4f6bff]'}`}>Tailoring</Link>
             <Link href="/services/bridal" className={`text-[11px] font-bold ${pathname.startsWith('/services/bridal') ? 'text-[#4f6bff]' : 'text-[#494643] hover:text-[#4f6bff]'}`}>Bridal</Link>
             <Link href="/appointments" className={`text-[11px] font-bold ${pathname === '/appointments' ? 'text-[#4f6bff]' : 'text-[#494643] hover:text-[#4f6bff]'}`}>Appointments</Link>
+            <Link href="/admin" className={`text-[11px] font-bold ${pathname === '/admin' ? 'text-[#d4af37]' : 'text-[#7d7871] hover:text-[#d4af37]'}`}>Admin</Link>
           </nav>
 
           <div className="ml-auto flex shrink-0 items-center gap-1.5 md:ml-0">

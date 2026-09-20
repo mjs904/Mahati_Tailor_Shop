@@ -1,0 +1,12 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "pnpm --filter @workspace/mahathi-tailor-shop run build",
+  "outputDirectory": "artifacts/mahathi-tailor-shop/dist",
+  "cleanUrls": true,
+  "rewrites": [
+    {
+      "source": "/products/:id",
+      "destination": "/products/preview.html"
+    }
+  ]
+}

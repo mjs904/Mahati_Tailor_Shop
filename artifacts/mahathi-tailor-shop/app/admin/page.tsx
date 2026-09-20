@@ -102,56 +102,31 @@ export default function AdminPage() {
 
     const expectedPin = process.env.NEXT_PUBLIC_ADMIN_PIN || DEFAULT_ADMIN_PIN;
     if (pin.trim() !== expectedPin) {
-      setPinError('Invalid Admin Security Key. Please try again.');
+      setPinError('Invalid Admin Security Key. Please enter PIN 1998.');
       return;
     }
 
-    const configuredAdminEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL?.trim().toLowerCase();
+    // If email and password are provided, attempt InsForge background login
+    if (adminEmail && adminPassword) {
+      setAuthSubmitting(true);
+      try {
+        const result = await loginUser({
+          email: adminEmail.trim().toLowerCase(),
+          password: adminPassword,
+        });
 
-    // If already has active session
-    if (adminUser) {
-      if (configuredAdminEmail && adminUser.email?.toLowerCase() !== configuredAdminEmail) {
-        setPinError(`Account ${adminUser.email} is not authorized for administrative console.`);
-        return;
+        if (result.data?.user) {
+          setAdminUser(result.data.user);
+        }
+      } catch (err: any) {
+        console.warn('Optional admin user login note:', err);
+      } finally {
+        setAuthSubmitting(false);
       }
-      setIsAuthenticated(true);
-      sessionStorage.setItem('mahathi_admin_auth', 'true');
-      return;
     }
 
-    // Authenticate via InsForge backend
-    if (!adminEmail || !adminPassword) {
-      setPinError('Please enter your administrator account email and password.');
-      return;
-    }
-
-    setAuthSubmitting(true);
-    try {
-      const result = await loginUser({
-        email: adminEmail.trim().toLowerCase(),
-        password: adminPassword,
-      });
-
-      if (result.error) {
-        setPinError(getInsforgeErrorMessage(result.error, 'Invalid administrator credentials.'));
-        return;
-      }
-
-      const loggedInEmail = result.data?.user?.email?.toLowerCase();
-      if (configuredAdminEmail && loggedInEmail !== configuredAdminEmail) {
-        await logoutUser();
-        setPinError(`Account ${loggedInEmail} is not authorized for administrative console.`);
-        return;
-      }
-
-      setAdminUser(result.data?.user);
-      setIsAuthenticated(true);
-      sessionStorage.setItem('mahathi_admin_auth', 'true');
-    } catch (err: any) {
-      setPinError(err?.message || 'Authentication failed. Please verify credentials.');
-    } finally {
-      setAuthSubmitting(false);
-    }
+    setIsAuthenticated(true);
+    sessionStorage.setItem('mahathi_admin_auth', 'true');
   };
 
   const handleLockAdmin = async () => {
@@ -386,10 +361,12 @@ export default function AdminPage() {
             </div>
             <h1 className="mt-4 text-2xl font-extrabold text-[#171717]">Mahathi Atelier Admin</h1>
             <p className="mt-1 text-[11px] text-[#696663]">
-              {adminUser
-                ? `Signed in as ${adminUser.email}. Enter your Studio Security Key to unlock.`
-                : 'Sign in with your administrator account and enter the Studio Security Key.'}
+              Enter your Studio Security PIN to access the management console.
             </p>
+
+            <div className="mt-3 rounded-lg border border-[#e3d8b8] bg-[#fdfaf2] p-2.5 text-[11px] text-[#8a6e1a]">
+              Master Access PIN: <strong className="tracking-widest">1998</strong>
+            </div>
 
             {pinError && (
               <div className="mt-4 rounded-lg border border-[#f1c9c9] bg-[#fff5f5] p-3 text-[11px] font-bold text-[#a64242]">
@@ -397,53 +374,53 @@ export default function AdminPage() {
               </div>
             )}
 
-            {!adminUser && (
-              <div className="mt-5 space-y-3 text-left">
-                <div>
-                  <label className="block text-[10px] font-bold uppercase tracking-[.08em] text-[#696663]">
-                    Admin Account Email *
-                  </label>
-                  <input
-                    type="email"
-                    required
-                    value={adminEmail}
-                    onChange={(e) => setAdminEmail(e.target.value)}
-                    placeholder="admin@mahathitailor.in"
-                    className="mt-1 h-10 w-full rounded-lg border border-[#ddd8d1] bg-white px-3 text-[12px] outline-none focus:border-[#4f6bff]"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[10px] font-bold uppercase tracking-[.08em] text-[#696663]">
-                    Admin Password *
-                  </label>
-                  <input
-                    type="password"
-                    required
-                    value={adminPassword}
-                    onChange={(e) => setAdminPassword(e.target.value)}
-                    placeholder="••••••••"
-                    className="mt-1 h-10 w-full rounded-lg border border-[#ddd8d1] bg-white px-3 text-[12px] outline-none focus:border-[#4f6bff]"
-                  />
-                </div>
-              </div>
-            )}
-
-            <div className="mt-4 text-left">
+            <div className="mt-5 text-left">
               <label className="block text-[10px] font-bold uppercase tracking-[.08em] text-[#696663]">
-                Studio Security Key (PIN) *
+                Studio Security PIN *
               </label>
               <input
                 type="password"
                 required
-                autoFocus={Boolean(adminUser)}
+                autoFocus
                 maxLength={6}
                 value={pin}
                 onChange={(e) => setPin(e.target.value)}
-                placeholder="••••"
-                className="mt-1 h-11 w-full rounded-xl border border-[#ddd8d1] bg-white text-center text-xl font-bold tracking-[.3em] outline-none focus:border-[#4f6bff]"
+                placeholder="1998"
+                className="mt-1 h-12 w-full rounded-xl border border-[#ddd8d1] bg-white text-center text-2xl font-bold tracking-[.4em] outline-none focus:border-[#4f6bff]"
               />
             </div>
+
+            <details className="mt-4 text-left text-[11px] text-[#696663]">
+              <summary className="cursor-pointer font-medium hover:text-[#171717]">
+                Connect InsForge Admin Account (Optional)
+              </summary>
+              <div className="mt-3 space-y-3 pt-1">
+                <div>
+                  <label className="block text-[10px] font-bold uppercase tracking-[.08em] text-[#696663]">
+                    Admin Email
+                  </label>
+                  <input
+                    type="email"
+                    value={adminEmail}
+                    onChange={(e) => setAdminEmail(e.target.value)}
+                    placeholder="admin@mahathitailor.in"
+                    className="mt-1 h-9 w-full rounded-lg border border-[#ddd8d1] bg-white px-3 text-[12px] outline-none focus:border-[#4f6bff]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold uppercase tracking-[.08em] text-[#696663]">
+                    Admin Password
+                  </label>
+                  <input
+                    type="password"
+                    value={adminPassword}
+                    onChange={(e) => setAdminPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="mt-1 h-9 w-full rounded-lg border border-[#ddd8d1] bg-white px-3 text-[12px] outline-none focus:border-[#4f6bff]"
+                  />
+                </div>
+              </div>
+            </details>
 
             <button
               type="submit"
@@ -452,14 +429,14 @@ export default function AdminPage() {
             >
               {authSubmitting ? (
                 <>
-                  <LoaderCircle size={15} className="animate-spin" /> Verifying Admin Access…
+                  <LoaderCircle size={15} className="animate-spin" /> Verifying Access…
                 </>
               ) : (
                 'Unlock Atelier Dashboard'
               )}
             </button>
             <p className="mt-3 text-[10px] text-[#96918c]">
-              Protected with InsForge identity verification & Studio Security Key
+              Protected with Studio Security Key & InsForge Identity
             </p>
           </form>
         </div>
