@@ -1,13 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "nextjs",
   "installCommand": "pnpm install --no-frozen-lockfile",
   "buildCommand": "pnpm --filter @workspace/mahathi-tailor-shop run build",
-  "outputDirectory": "artifacts/mahathi-tailor-shop/dist",
-  "cleanUrls": true,
-  "rewrites": [
-    {
-      "source": "/products/:id",
-      "destination": "/products/preview.html"
-    }
-  ]
+  "outputDirectory": "artifacts/mahathi-tailor-shop/.next"
 }
