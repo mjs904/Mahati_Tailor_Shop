@@ -97,6 +97,31 @@ function normalizeKey(value: unknown): string {
   return stringValue(value).toLowerCase().trim();
 }
 
+function normalizeStock(value: unknown): string {
+  if (value === null || value === undefined || value === '') {
+    return 'In stock';
+  }
+  if (typeof value === 'number') {
+    if (value <= 0) return 'Out of stock';
+    if (value === 1) return 'Only 1 left';
+    if (value <= 3) return `Only ${value} left`;
+    return 'In stock';
+  }
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (!trimmed) return 'In stock';
+    if (/^\d+$/.test(trimmed)) {
+      const num = parseInt(trimmed, 10);
+      if (num <= 0) return 'Out of stock';
+      if (num === 1) return 'Only 1 left';
+      if (num <= 3) return `Only ${num} left`;
+      return 'In stock';
+    }
+    return trimmed;
+  }
+  return 'In stock';
+}
+
 function isActiveRecord(record: RawRecord): boolean {
   const explicitActive = firstValue(record, [
     'is_active',
@@ -333,7 +358,7 @@ function normalizeProduct(
         'rating_count',
       ]),
     ),
-    stock: stringValue(
+    stock: normalizeStock(
       firstValue(record, [
         'stock',
         'availability',
@@ -341,7 +366,6 @@ function normalizeProduct(
         'stockStatus',
         'inventory_status',
       ]),
-      'In stock',
     ),
     sizes: extractSizes(record, category.name),
     image: extractImage(record, '/mahathi-atelier.jpg'),
@@ -406,7 +430,27 @@ export async function fetchCatalog(): Promise<CatalogSnapshot> {
     )
     .filter((category): category is Category => Boolean(category));
 
-  return { categories, products, error };
+  // Synthesize any categories that products reference but are not yet in the categories table
+  const existingCategoryKeys = new Set(
+    categories.map((c) => normalizeKey(c.name)),
+  );
+  const synthesizedCategories: Category[] = [];
+  for (const product of products) {
+    const catKey = normalizeKey(product.category);
+    if (catKey && !existingCategoryKeys.has(catKey)) {
+      existingCategoryKeys.add(catKey);
+      synthesizedCategories.push({
+        id: product.categoryId || catKey,
+        name: product.category,
+        slug: catKey.replace(/\s+/g, '-'),
+        count: `${productCounts.get(catKey) || 1} styles`,
+        image: fallbackCategoryArt[catKey] || '/mahathi-atelier.jpg',
+        tone: fallbackCategoryTones[catKey] || fallbackTone,
+      });
+    }
+  }
+
+  return { categories: [...categories, ...synthesizedCategories], products, error };
 }
 
 export async function fetchProductById(id: string): Promise<{

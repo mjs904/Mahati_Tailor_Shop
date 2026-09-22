@@ -2,9 +2,10 @@
 
 import { useState, useEffect, FormEvent } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, ArrowRight, CheckCircle2, HeartHandshake, LoaderCircle, Sparkles, Star } from 'lucide-react';
+import { ArrowLeft, ArrowRight, CheckCircle2, HeartHandshake, LoaderCircle, Lock, Sparkles, Star } from 'lucide-react';
 import Header from '../../components/header';
 import Footer from '../../components/footer';
+import AuthModal from '../../components/auth-modal';
 import { ensureProfileId, getCurrentSession, getInsforgeTable, INSFORGE_TABLES, isInsforgeConfigured } from '../../../lib/insforge';
 
 export default function BridalPage() {
@@ -18,6 +19,7 @@ export default function BridalPage() {
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [showAuthModal, setShowAuthModal] = useState(false);
 
   useEffect(() => {
     if (!isInsforgeConfigured()) return;
@@ -40,6 +42,13 @@ export default function BridalPage() {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    if (!userId) {
+      setShowAuthModal(true);
+      setError('Please sign in or create an account to request a bridal consultation.');
+      return;
+    }
+
     setSubmitting(true);
 
     try {
@@ -199,6 +208,26 @@ export default function BridalPage() {
                 </h2>
               </div>
 
+              {!userId && (
+                <div className="mt-4 flex items-start gap-3 rounded-xl border border-[#f5e0b8] bg-[#fffbf2] p-4 text-[#8a651a]">
+                  <Lock size={18} className="mt-0.5 shrink-0 text-[#8a651a]" />
+                  <div className="text-[12px] leading-5">
+                    <p className="font-bold text-[#171717]">Sign in required for bridal requests</p>
+                    <p className="mt-0.5 text-[#735415]">
+                      Please{' '}
+                      <Link href="/login?redirect=/services/bridal" className="font-bold text-[#4f6bff] underline hover:text-[#171717]">
+                        sign in
+                      </Link>{' '}
+                      or{' '}
+                      <Link href="/register?redirect=/services/bridal" className="font-bold text-[#4f6bff] underline hover:text-[#171717]">
+                        create an account
+                      </Link>{' '}
+                      so our bridal stylists can link your occasion timeline to your account.
+                    </p>
+                  </div>
+                </div>
+              )}
+
               {error && (
                 <div className="mt-4 rounded-xl border border-[#f1c9c9] bg-[#fff5f5] p-3.5 text-[11px] text-[#a64242]">
                   {error}
@@ -297,6 +326,13 @@ export default function BridalPage() {
         </div>
       </div>
       <Footer />
+      <AuthModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        title="Sign in required"
+        message="Please sign in or create an account to request a bridal consultation."
+        redirectPath="/services/bridal"
+      />
     </main>
   );
 }

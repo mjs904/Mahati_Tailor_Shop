@@ -2,9 +2,10 @@
 
 import { useState, useEffect, FormEvent } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, CalendarDays, CheckCircle2, Clock3, LoaderCircle, MapPin, Phone } from 'lucide-react';
+import { ArrowLeft, CalendarDays, CheckCircle2, Clock3, LoaderCircle, Lock, MapPin, Phone } from 'lucide-react';
 import Header from '../components/header';
 import Footer from '../components/footer';
+import AuthModal from '../components/auth-modal';
 import { ensureProfileId, getCurrentSession, getInsforgeTable, INSFORGE_TABLES, isInsforgeConfigured } from '../../lib/insforge';
 
 const TIME_SLOTS = [
@@ -28,6 +29,7 @@ export default function AppointmentsPage() {
   const [submitting, setSubmitting] = useState(false);
   const [bookedId, setBookedId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [showAuthModal, setShowAuthModal] = useState(false);
 
   // Set default min date to tomorrow
   const minDate = new Date();
@@ -56,6 +58,12 @@ export default function AppointmentsPage() {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    if (!userId) {
+      setShowAuthModal(true);
+      setError('Please sign in or create an account to schedule an appointment.');
+      return;
+    }
 
     if (!date || !slotTime || !name || !phone) {
       setError('Please provide your date, preferred slot, name, and phone number.');
@@ -189,6 +197,26 @@ export default function AppointmentsPage() {
                   Schedule Your Visit
                 </h2>
               </div>
+
+              {!userId && (
+                <div className="mt-4 flex items-start gap-3 rounded-xl border border-[#f5e0b8] bg-[#fffbf2] p-4 text-[#8a651a]">
+                  <Lock size={18} className="mt-0.5 shrink-0 text-[#8a651a]" />
+                  <div className="text-[12px] leading-5">
+                    <p className="font-bold text-[#171717]">Sign in required to book appointments</p>
+                    <p className="mt-0.5 text-[#735415]">
+                      Please{' '}
+                      <Link href="/login?redirect=/appointments" className="font-bold text-[#4f6bff] underline hover:text-[#171717]">
+                        sign in
+                      </Link>{' '}
+                      or{' '}
+                      <Link href="/register?redirect=/appointments" className="font-bold text-[#4f6bff] underline hover:text-[#171717]">
+                        create an account
+                      </Link>{' '}
+                      to confirm your boutique fitting slot.
+                    </p>
+                  </div>
+                </div>
+              )}
 
               {error && (
                 <div className="mt-4 rounded-xl border border-[#f1c9c9] bg-[#fff5f5] p-3.5 text-[11px] text-[#a64242]">
@@ -340,6 +368,13 @@ export default function AppointmentsPage() {
         )}
       </div>
       <Footer />
+      <AuthModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        title="Sign in to schedule"
+        message="Please sign in or create an account to book your boutique appointment."
+        redirectPath="/appointments"
+      />
     </main>
   );
 }

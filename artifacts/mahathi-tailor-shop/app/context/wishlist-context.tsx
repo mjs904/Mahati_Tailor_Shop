@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react';
 import { Product } from '../data/products';
 import { getCurrentSession, getInsforgeTable, INSFORGE_TABLES, isInsforgeConfigured } from '../../lib/insforge';
+import AuthModal from '../components/auth-modal';
 
 interface WishlistContextType {
   wishlistIds: string[];
@@ -11,62 +12,41 @@ interface WishlistContextType {
   isInWishlist: (productId: string) => boolean;
   removeFromWishlist: (productId: string) => void;
   count: number;
+  isAuthenticated: boolean;
+  requireAuth: (title?: string, message?: string, redirectPath?: string) => boolean;
 }
 
 const WishlistContext = createContext<WishlistContextType | undefined>(undefined);
 
-const LOCAL_STORAGE_IDS_KEY = 'mahathi-wishlist';
-const LOCAL_STORAGE_ITEMS_KEY = 'mahathi-wishlist-items';
-
 export function WishlistProvider({ children }: { children: React.ReactNode }) {
   const [wishlistIds, setWishlistIds] = useState<string[]>([]);
   const [wishlistItems, setWishlistItems] = useState<Product[]>([]);
-  const [isInitialized, setIsInitialized] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
+  const [authModalConfig, setAuthModalConfig] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    redirectPath: string;
+  }>({
+    isOpen: false,
+    title: 'Sign in required',
+    message: 'Please sign in or create an account to save items to your wishlist.',
+    redirectPath: '/wishlist',
+  });
 
-  // 1. Load initial wishlist from localStorage
+  // Track authenticated user session
   useEffect(() => {
-    try {
-      const savedIds = localStorage.getItem(LOCAL_STORAGE_IDS_KEY);
-      const savedItems = localStorage.getItem(LOCAL_STORAGE_ITEMS_KEY);
-      if (savedIds) {
-        setWishlistIds(JSON.parse(savedIds));
-      }
-      if (savedItems) {
-        setWishlistItems(JSON.parse(savedItems));
-      }
-    } catch {
-      // ignore
-    } finally {
-      setIsInitialized(true);
-    }
-  }, []);
-
-  // 2. Save to localStorage & notify listeners
-  useEffect(() => {
-    if (!isInitialized) return;
-    try {
-      localStorage.setItem(LOCAL_STORAGE_IDS_KEY, JSON.stringify(wishlistIds));
-      localStorage.setItem(LOCAL_STORAGE_ITEMS_KEY, JSON.stringify(wishlistItems));
-      localStorage.setItem('mahathi-wishlist-count', String(wishlistIds.length));
-      window.dispatchEvent(new Event('mahathi-wishlist-updated'));
-    } catch {
-      // ignore
-    }
-  }, [wishlistIds, wishlistItems, isInitialized]);
-
-  // 3. Track user session
-  useEffect(() => {
-    if (!isInsforgeConfigured()) return;
     let mounted = true;
 
     const checkUser = async () => {
       try {
+        if (!isInsforgeConfigured()) {
+          if (mounted) setUserId(null);
+          return;
+        }
         const session = await getCurrentSession();
-        if (mounted && session.user?.id) {
-          setUserId(session.user.id);
-        } else if (mounted) {
-          setUserId(null);
+        if (mounted) {
+          setUserId(session.user?.id || null);
         }
       } catch {
         if (mounted) setUserId(null);
@@ -79,62 +59,125 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  const isInWishlist = useCallback(
-    (productId: string) => wishlistIds.includes(productId),
-    [wishlistIds],
-  );
-
-  const removeFromWishlist = useCallback((productId: string) => {
-    setWishlistIds((prev) => prev.filter((id) => id !== productId));
-    setWishlistItems((prev) => prev.filter((item) => item.id !== productId));
-
-    if (userId && isInsforgeConfigured()) {
-      void (async () => {
-        try {
-          await getInsforgeTable(INSFORGE_TABLES.wishlist)
-            .delete()
-            .eq('user_id', userId)
-            .eq('product_id', productId);
-        } catch {
-          // ignore
-        }
-      })();
+  // Sync wishlist from database when user logs in
+  useEffect(() => {
+    if (!userId || !isInsforgeConfigured()) {
+      setWishlistIds([]);
+      setWishlistItems([]);
+      return;
     }
+
+    let active = true;
+    const fetchSavedWishlist = async () => {
+      try {
+        const { data } = await getInsforgeTable(INSFORGE_TABLES.wishlist)
+          .select('product_id')
+          .eq('user_id', userId);
+        if (active && data) {
+          const ids = data.map((r: any) => r.product_id).filter(Boolean);
+          setWishlistIds(ids);
+        }
+      } catch {
+        // ignore
+      }
+    };
+
+    void fetchSavedWishlist();
+    return () => {
+      active = false;
+    };
   }, [userId]);
 
-  const toggleWishlist = useCallback((product: Product) => {
-    setWishlistIds((prevIds) => {
-      const exists = prevIds.includes(product.id);
-      if (exists) {
-        setWishlistItems((prevItems) => prevItems.filter((item) => item.id !== product.id));
-        return prevIds.filter((id) => id !== product.id);
-      } else {
-        setWishlistItems((prevItems) => [...prevItems.filter((i) => i.id !== product.id), product]);
-        return [...prevIds, product.id];
-      }
-    });
+  const requireAuth = useCallback(
+    (title = 'Sign in required', message = 'Please sign in or create an account to continue.', redirectPath = '/account'): boolean => {
+      if (userId) return true;
+      setAuthModalConfig({
+        isOpen: true,
+        title,
+        message,
+        redirectPath,
+      });
+      return false;
+    },
+    [userId],
+  );
 
-    if (userId && isInsforgeConfigured()) {
-      void (async () => {
-        try {
-          const exists = wishlistIds.includes(product.id);
-          if (exists) {
+  const isInWishlist = useCallback(
+    (productId: string) => (userId ? wishlistIds.includes(productId) : false),
+    [wishlistIds, userId],
+  );
+
+  const removeFromWishlist = useCallback(
+    (productId: string) => {
+      if (!userId) {
+        requireAuth('Sign in required', 'Please sign in to manage your wishlist.', '/wishlist');
+        return;
+      }
+
+      setWishlistIds((prev) => prev.filter((id) => id !== productId));
+      setWishlistItems((prev) => prev.filter((item) => item.id !== productId));
+
+      if (isInsforgeConfigured()) {
+        void (async () => {
+          try {
             await getInsforgeTable(INSFORGE_TABLES.wishlist)
               .delete()
               .eq('user_id', userId)
-              .eq('product_id', product.id);
-          } else {
-            await getInsforgeTable(INSFORGE_TABLES.wishlist).insert({
-              user_id: userId,
-              product_id: product.id,
-            });
+              .eq('product_id', productId);
+          } catch {
+            // ignore
           }
-        } catch {
-          // ignore
+        })();
+      }
+    },
+    [userId, requireAuth],
+  );
+
+  const toggleWishlist = useCallback(
+    (product: Product) => {
+      if (!userId) {
+        requireAuth(
+          'Save to your Wishlist',
+          `Sign in or create an account to save "${product.name}" to your wishlist.`,
+          '/wishlist',
+        );
+        return;
+      }
+
+      setWishlistIds((prevIds) => {
+        const exists = prevIds.includes(product.id);
+        if (exists) {
+          setWishlistItems((prevItems) => prevItems.filter((item) => item.id !== product.id));
+          return prevIds.filter((id) => id !== product.id);
+        } else {
+          setWishlistItems((prevItems) => [...prevItems.filter((i) => i.id !== product.id), product]);
+          return [...prevIds, product.id];
         }
-      })();
-    }
-  }, [userId, wishlistIds]);
+      });
+
+      if (isInsforgeConfigured()) {
+        void (async () => {
+          try {
+            const exists = wishlistIds.includes(product.id);
+            if (exists) {
+              await getInsforgeTable(INSFORGE_TABLES.wishlist)
+                .delete()
+                .eq('user_id', userId)
+                .eq('product_id', product.id);
+            } else {
+              await getInsforgeTable(INSFORGE_TABLES.wishlist).insert({
+                user_id: userId,
+                product_id: product.id,
+              });
+            }
+          } catch {
+            // ignore
+          }
+        })();
+      }
+    },
+    [userId, wishlistIds, requireAuth],
+  );
 
   const contextValue = useMemo(
     () => ({
@@ -144,11 +187,24 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
       isInWishlist,
       removeFromWishlist,
       count: wishlistIds.length,
+      isAuthenticated: Boolean(userId),
+      requireAuth,
     }),
-    [wishlistIds, wishlistItems, toggleWishlist, isInWishlist, removeFromWishlist],
+    [wishlistIds, wishlistItems, toggleWishlist, isInWishlist, removeFromWishlist, userId, requireAuth],
   );
 
-  return <WishlistContext.Provider value={contextValue}>{children}</WishlistContext.Provider>;
+  return (
+    <WishlistContext.Provider value={contextValue}>
+      {children}
+      <AuthModal
+        isOpen={authModalConfig.isOpen}
+        onClose={() => setAuthModalConfig((prev) => ({ ...prev, isOpen: false }))}
+        title={authModalConfig.title}
+        message={authModalConfig.message}
+        redirectPath={authModalConfig.redirectPath}
+      />
+    </WishlistContext.Provider>
+  );
 }
 
 export function useWishlist() {

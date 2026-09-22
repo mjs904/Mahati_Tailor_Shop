@@ -7,6 +7,7 @@ import {
   CheckCircle2,
   Clock3,
   LoaderCircle,
+  Lock,
   Ruler,
   Scissors,
   ShieldCheck,
@@ -14,6 +15,7 @@ import {
 } from 'lucide-react';
 import Header from '../components/header';
 import Footer from '../components/footer';
+import AuthModal from '../components/auth-modal';
 import {
   ensureProfileId,
   getCurrentSession,
@@ -40,6 +42,7 @@ export default function MeasurementsPage() {
   const [submitting, setSubmitting] = useState(false);
   const [submittedSuccess, setSubmittedSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showAuthModal, setShowAuthModal] = useState(false);
 
   // Load user session & saved measurements
   useEffect(() => {
@@ -90,6 +93,13 @@ export default function MeasurementsPage() {
     e.preventDefault();
     setError(null);
     setSubmitting(true);
+
+    if (!userId) {
+      setShowAuthModal(true);
+      setError('Please sign in or create an account to save your body measurements.');
+      setSubmitting(false);
+      return;
+    }
 
     if (!userName.trim() || !userPhone.trim()) {
       setError('Please provide your name and contact phone number.');
@@ -251,6 +261,26 @@ export default function MeasurementsPage() {
                 Use a standard measuring tape in inches. For guidance, visit our Banjara Hills
                 studio or request a master stylist call.
               </p>
+
+              {!userId && (
+                <div className="mt-4 flex items-start gap-3 rounded-xl border border-[#f5e0b8] bg-[#fffbf2] p-4 text-[#8a651a]">
+                  <Lock size={18} className="mt-0.5 shrink-0 text-[#8a651a]" />
+                  <div className="text-[12px] leading-5">
+                    <p className="font-bold text-[#171717]">Sign in required to save measurements</p>
+                    <p className="mt-0.5 text-[#735415]">
+                      Please{' '}
+                      <Link href="/login?redirect=/measurements" className="font-bold text-[#4f6bff] underline hover:text-[#171717]">
+                        sign in
+                      </Link>{' '}
+                      or{' '}
+                      <Link href="/register?redirect=/measurements" className="font-bold text-[#4f6bff] underline hover:text-[#171717]">
+                        create an account
+                      </Link>{' '}
+                      to save and auto-fill your measurement profile for future orders.
+                    </p>
+                  </div>
+                </div>
+              )}
 
               {error && (
                 <div className="mt-4 rounded-xl border border-[#f1c9c9] bg-[#fff5f5] p-3 text-[11px] text-[#a64242]">
@@ -474,6 +504,13 @@ export default function MeasurementsPage() {
         )}
       </div>
       <Footer />
+      <AuthModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        title="Sign in required"
+        message="Please sign in or create an account to save your bespoke body measurements."
+        redirectPath="/measurements"
+      />
     </main>
   );
 }

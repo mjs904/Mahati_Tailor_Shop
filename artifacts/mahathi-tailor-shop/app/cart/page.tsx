@@ -5,11 +5,24 @@ import { ArrowRight, Minus, Plus, ShieldCheck, ShoppingBag, Trash2, Truck } from
 import Header from '../components/header';
 import Footer from '../components/footer';
 import { useCart } from '../context/cart-context';
+import { useWishlist } from '../context/wishlist-context';
 import { formatPrice } from '../data/products';
 
 export default function CartPage() {
   const { items, removeFromCart, updateQuantity, clearCart, itemCount, subtotal, shipping, discount, total } =
     useCart();
+  const { isAuthenticated, requireAuth } = useWishlist();
+
+  const handleCheckoutClick = (e: React.MouseEvent) => {
+    if (!isAuthenticated) {
+      e.preventDefault();
+      requireAuth(
+        'Sign in to checkout',
+        'Please sign in or create an account to proceed with your order and delivery details.',
+        '/checkout',
+      );
+    }
+  };
 
   return (
     <main className="market-shell min-h-[100dvh]">
@@ -183,6 +196,7 @@ export default function CartPage() {
 
                 <Link
                   href="/checkout"
+                  onClick={handleCheckoutClick}
                   className="gradient-ink mt-6 flex h-12 w-full items-center justify-center gap-2 rounded-xl text-[12px] font-bold text-white shadow-md transition-opacity hover:opacity-90"
                 >
                   Proceed to Checkout <ArrowRight size={15} />

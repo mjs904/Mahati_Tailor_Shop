@@ -2,9 +2,10 @@
 
 import { useState, useEffect, FormEvent } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, CheckCircle2, LoaderCircle, Ruler, Scissors, Sparkles, Truck } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, LoaderCircle, Lock, Ruler, Scissors, Sparkles, Truck } from 'lucide-react';
 import Header from '../../components/header';
 import Footer from '../../components/footer';
+import AuthModal from '../../components/auth-modal';
 import { ensureProfileId, getCurrentSession, getInsforgeTable, INSFORGE_TABLES, isInsforgeConfigured } from '../../../lib/insforge';
 
 type ServiceType = 'Blouse Stitching' | 'Kurta Set' | 'Lehenga Ensemble' | 'Express Alterations';
@@ -24,6 +25,7 @@ export default function TailoringPage() {
   const [submitting, setSubmitting] = useState(false);
   const [successId, setSuccessId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [showAuthModal, setShowAuthModal] = useState(false);
 
   useEffect(() => {
     if (!isInsforgeConfigured()) return;
@@ -46,6 +48,13 @@ export default function TailoringPage() {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    if (!userId) {
+      setShowAuthModal(true);
+      setError('Please sign in or create an account to submit a tailoring order.');
+      return;
+    }
+
     setSubmitting(true);
 
     try {
@@ -179,6 +188,26 @@ export default function TailoringPage() {
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="mx-auto max-w-3xl space-y-8">
+            {!userId && (
+              <div className="flex items-start gap-3 rounded-xl border border-[#f5e0b8] bg-[#fffbf2] p-4 text-[#8a651a]">
+                <Lock size={18} className="mt-0.5 shrink-0 text-[#8a651a]" />
+                <div className="text-[12px] leading-5">
+                  <p className="font-bold text-[#171717]">Sign in required to request tailoring</p>
+                  <p className="mt-0.5 text-[#735415]">
+                    Please{' '}
+                    <Link href="/login?redirect=/services/tailoring" className="font-bold text-[#4f6bff] underline hover:text-[#171717]">
+                      sign in
+                    </Link>{' '}
+                    or{' '}
+                    <Link href="/register?redirect=/services/tailoring" className="font-bold text-[#4f6bff] underline hover:text-[#171717]">
+                      create an account
+                    </Link>{' '}
+                    so our master tailors can link your measurements and garment requests to your account.
+                  </p>
+                </div>
+              </div>
+            )}
+
             {error && (
               <div className="rounded-xl border border-[#f1c9c9] bg-[#fff5f5] p-4 text-[12px] text-[#a64242]">
                 {error}
@@ -382,6 +411,13 @@ export default function TailoringPage() {
         )}
       </div>
       <Footer />
+      <AuthModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        title="Sign in required"
+        message="Please sign in or create an account to submit your bespoke tailoring request."
+        redirectPath="/services/tailoring"
+      />
     </main>
   );
 }

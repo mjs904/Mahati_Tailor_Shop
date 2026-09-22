@@ -141,15 +141,27 @@ export function logoutUser() {
   return getInsforgeClient().auth.signOut();
 }
 
+/**
+ * Initiate Google OAuth sign-in via InsForge
+ */
+export function signInWithGoogle(redirectTo?: string) {
+  const targetUrl =
+    redirectTo ||
+    (typeof window !== 'undefined' ? `${window.location.origin}/account` : undefined);
+  return getInsforgeClient().auth.signInWithOAuth('google', {
+    redirectTo: targetUrl,
+    additionalParams: { prompt: 'select_account' },
+  });
+}
+
 export function createProfile(profile: ProfileRecord) {
   return getInsforgeTable(INSFORGE_TABLES.profiles).insert(profile);
 }
 
 /**
- * Ensures a valid record exists in the 'profiles' table and returns its UUID.
- * If user is authenticated, returns user's existing ID.
- * If guest, creates a guest profile row so foreign keys (orders, appointments,
- * tailoring requests) are properly satisfied in Postgres.
+ * Ensures a valid authenticated profile exists and returns its UUID.
+ * Strictly requires an authenticated user; rejects unauthenticated calls
+ * to enforce user-specific actions on the service layer.
  */
 export async function ensureProfileId(details: {
   id?: string | null;
@@ -161,37 +173,31 @@ export async function ensureProfileId(details: {
   state?: string;
   pincode?: string;
 }): Promise<string> {
-  if (details.id && details.id !== '00000000-0000-0000-0000-000000000000') {
-    return details.id;
+  if (!details.id || details.id === '00000000-0000-0000-0000-000000000000') {
+    throw new Error('Authentication required: Please sign in or create an account to continue.');
   }
 
-  let guestId: string;
-  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
-    guestId = crypto.randomUUID();
-  } else {
-    guestId = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
-      const r = (Math.random() * 16) | 0;
-      const v = c === 'x' ? r : (r & 0x3) | 0x8;
-      return v.toString(16);
-    });
-  }
-
+  // Ensure profile details are up to date for this authenticated user
   try {
-    await getInsforgeTable(INSFORGE_TABLES.profiles).insert({
-      id: guestId,
-      name: details.name?.trim() || 'Boutique Client',
-      phone: details.phone?.trim() || '9999999999',
-      email: details.email?.trim() || `${guestId.slice(0, 8)}@guest.mahathitailor.in`,
-      address: details.address?.trim() || null,
-      city: details.city?.trim() || 'Hyderabad',
-      state: details.state?.trim() || 'Telangana',
-      pincode: details.pincode?.trim() || '500034',
-    });
+    const table = getInsforgeTable(INSFORGE_TABLES.profiles);
+    const { data: existing } = await table.select().eq('id', details.id).single();
+    if (!existing) {
+      await table.insert({
+        id: details.id,
+        name: details.name?.trim() || 'Boutique Client',
+        phone: details.phone?.trim() || '',
+        email: details.email?.trim() || '',
+        address: details.address?.trim() || null,
+        city: details.city?.trim() || 'Hyderabad',
+        state: details.state?.trim() || 'Telangana',
+        pincode: details.pincode?.trim() || '500034',
+      });
+    }
   } catch (err) {
-    console.warn('ensureProfileId note:', err);
+    console.warn('Profile sync notice:', err);
   }
 
-  return guestId;
+  return details.id;
 }
 
 /**

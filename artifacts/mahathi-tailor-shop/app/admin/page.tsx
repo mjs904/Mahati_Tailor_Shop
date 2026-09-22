@@ -228,22 +228,35 @@ export default function AdminPage() {
     setCreatingProduct(true);
 
     try {
-      const slug = newProdName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+      const baseSlug = newProdName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+      const uniqueSuffix = Date.now().toString(36).slice(-4);
+      const slug = `${baseSlug}-${uniqueSuffix}`;
+
+      // Map stock selection to integer quantity for PostgreSQL
+      let stockQty = 25;
+      if (newProdStock === 'Only 2 left') stockQty = 2;
+      else if (newProdStock === 'Made to order') stockQty = 1;
+      else if (newProdStock === 'Out of stock') stockQty = 0;
+      else if (!isNaN(parseInt(newProdStock, 10))) stockQty = parseInt(newProdStock, 10);
+
       const payload = {
         name: newProdName.trim(),
         slug,
         description: newProdDesc.trim(),
-        category_id: newProdCategory || null,
+        category_id: newProdCategory && newProdCategory.trim() ? newProdCategory.trim() : null,
         price: parseFloat(newProdPrice),
         original_price: newProdOrigPrice ? parseFloat(newProdOrigPrice) : null,
-        stock: newProdStock,
+        stock: stockQty,
         image_url: newProdImage,
         rating: 4.9,
         is_active: true,
         is_featured: true,
       };
 
-      await getInsforgeTable(INSFORGE_TABLES.products).insert(payload);
+      const { error } = await getInsforgeTable(INSFORGE_TABLES.products).insert(payload);
+      if (error) {
+        throw new Error(getInsforgeErrorMessage(error));
+      }
 
       notifySuccess(`Product "${newProdName}" added successfully!`);
       setNewProdName('');
@@ -252,6 +265,9 @@ export default function AdminPage() {
       setNewProdDesc('');
       setShowAddProduct(false);
       void refreshData();
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('mahathi-catalog-updated'));
+      }
     } catch (err: any) {
       alert(`Could not add product: ${err.message}`);
     } finally {
@@ -263,9 +279,15 @@ export default function AdminPage() {
   const handleDeleteProduct = async (id: string, name: string) => {
     if (!confirm(`Are you sure you want to delete "${name}"?`)) return;
     try {
-      await getInsforgeTable(INSFORGE_TABLES.products).delete().eq('id', id);
+      const { error } = await getInsforgeTable(INSFORGE_TABLES.products).delete().eq('id', id);
+      if (error) {
+        throw new Error(getInsforgeErrorMessage(error));
+      }
       notifySuccess(`Deleted product "${name}"`);
       void refreshData();
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('mahathi-catalog-updated'));
+      }
     } catch (err: any) {
       alert(`Could not delete: ${err.message}`);
     }
@@ -278,7 +300,9 @@ export default function AdminPage() {
     setCreatingCat(true);
 
     try {
-      const slug = (newCatSlug || newCatName).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+      const baseSlug = (newCatSlug || newCatName).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+      const uniqueSuffix = Date.now().toString(36).slice(-4);
+      const slug = `${baseSlug}-${uniqueSuffix}`;
       const payload = {
         name: newCatName.trim(),
         slug,
@@ -287,7 +311,10 @@ export default function AdminPage() {
         is_active: true,
       };
 
-      await getInsforgeTable(INSFORGE_TABLES.categories).insert(payload);
+      const { error } = await getInsforgeTable(INSFORGE_TABLES.categories).insert(payload);
+      if (error) {
+        throw new Error(getInsforgeErrorMessage(error));
+      }
 
       notifySuccess(`Category "${newCatName}" added!`);
       setNewCatName('');
@@ -295,6 +322,9 @@ export default function AdminPage() {
       setNewCatDesc('');
       setShowAddCat(false);
       void refreshData();
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('mahathi-catalog-updated'));
+      }
     } catch (err: any) {
       alert(`Could not add category: ${err.message}`);
     } finally {
@@ -306,9 +336,15 @@ export default function AdminPage() {
   const handleDeleteCategory = async (id: string, name: string) => {
     if (!confirm(`Delete category "${name}"?`)) return;
     try {
-      await getInsforgeTable(INSFORGE_TABLES.categories).delete().eq('id', id);
+      const { error } = await getInsforgeTable(INSFORGE_TABLES.categories).delete().eq('id', id);
+      if (error) {
+        throw new Error(getInsforgeErrorMessage(error));
+      }
       notifySuccess(`Deleted category "${name}"`);
       void refreshData();
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('mahathi-catalog-updated'));
+      }
     } catch (err: any) {
       alert(`Could not delete: ${err.message}`);
     }
@@ -682,7 +718,13 @@ export default function AdminPage() {
                                 <td className="p-3.5 font-extrabold text-[#171717]">{formatPrice(p.price)}</td>
                                 <td className="p-3.5">
                                   <span className="rounded bg-[#eef8ed] px-2 py-0.5 text-[10px] font-semibold text-[#287335]">
-                                    {p.stock || 'In stock'}
+                                    {typeof p.stock === 'number'
+                                      ? p.stock === 0
+                                        ? 'Out of stock'
+                                        : p.stock <= 3
+                                          ? `Only ${p.stock} left`
+                                          : 'In stock'
+                                      : p.stock || 'In stock'}
                                   </span>
                                 </td>
                                 <td className="p-3.5 text-right">

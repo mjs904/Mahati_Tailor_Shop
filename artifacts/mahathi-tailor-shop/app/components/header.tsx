@@ -71,7 +71,6 @@ export default function Header() {
     ['Tailoring', '/services/tailoring'],
     ['Appointments', '/appointments'],
     ['Measurements', '/measurements'],
-    ['Admin Console', '/admin'],
   ];
 
   return (
@@ -105,7 +104,6 @@ export default function Header() {
             <Link href="/services/tailoring" className={`text-[11px] font-bold ${pathname.startsWith('/services/tailoring') ? 'text-[#4f6bff]' : 'text-[#494643] hover:text-[#4f6bff]'}`}>Tailoring</Link>
             <Link href="/services/bridal" className={`text-[11px] font-bold ${pathname.startsWith('/services/bridal') ? 'text-[#4f6bff]' : 'text-[#494643] hover:text-[#4f6bff]'}`}>Bridal</Link>
             <Link href="/appointments" className={`text-[11px] font-bold ${pathname === '/appointments' ? 'text-[#4f6bff]' : 'text-[#494643] hover:text-[#4f6bff]'}`}>Appointments</Link>
-            <Link href="/admin" className={`text-[11px] font-bold ${pathname === '/admin' ? 'text-[#d4af37]' : 'text-[#7d7871] hover:text-[#d4af37]'}`}>Admin</Link>
           </nav>
 
           <div className="ml-auto flex shrink-0 items-center gap-1.5 md:ml-0">
@@ -145,14 +143,6 @@ export default function Header() {
               <span className="hidden text-[10px] font-bold xl:inline">{authUser ? 'Account' : 'Log in'}</span>
             </Link>
 
-            <Link
-              href="/admin"
-              className="hidden h-10 items-center justify-center rounded-lg border border-[#e8e4df] bg-white px-2.5 text-[10px] font-bold text-[#696663] transition-colors hover:border-[#171717] hover:text-[#171717] md:flex"
-              title="Admin Portal"
-            >
-              Admin
-            </Link>
-
             <button
               type="button"
               className="flex h-10 w-10 items-center justify-center rounded-lg text-[#494643] hover:bg-white lg:hidden"
@@ -175,12 +165,6 @@ export default function Header() {
                 {label}
               </Link>
             ))}
-            <Link
-              href="/admin"
-              className="shrink-0 text-[10px] font-bold text-[#8a3dff] transition-colors hover:underline lg:hidden"
-            >
-              Admin Portal
-            </Link>
             <span className="ml-auto shrink-0 font-label text-[9px] uppercase tracking-[.12em] text-[#d600c7]">
               New: festive edit
             </span>
@@ -213,13 +197,6 @@ export default function Header() {
                 className="rounded-lg px-3 py-2.5 text-[12px] font-bold text-[#d600c7] hover:bg-[#faf8f5]"
               >
                 Wishlist ({wishCount})
-              </Link>
-              <Link
-                href="/admin"
-                onClick={() => setMenuOpen(false)}
-                className="col-span-2 rounded-lg border border-[#e8e4df] px-3 py-2 text-center text-[12px] font-bold text-[#171717]"
-              >
-                Store Admin Portal
               </Link>
             </div>
           </div>

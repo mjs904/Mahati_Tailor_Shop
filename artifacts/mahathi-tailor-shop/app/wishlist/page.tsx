@@ -9,7 +9,7 @@ import { useCart } from '../context/cart-context';
 import { formatPrice } from '../data/products';
 
 export default function WishlistPage() {
-  const { wishlistItems, removeFromWishlist, count } = useWishlist();
+  const { wishlistItems, removeFromWishlist, count, isAuthenticated } = useWishlist();
   const { addToCart } = useCart();
 
   const handleMoveToCart = (product: (typeof wishlistItems)[0]) => {
@@ -27,11 +27,37 @@ export default function WishlistPage() {
           </p>
           <h1 className="mt-1 text-3xl font-extrabold tracking-[-.05em] text-[#171717]">
             Your Wishlist{' '}
-            <span className="text-xl font-normal text-[#96918c]">({count} saved)</span>
+            {isAuthenticated && (
+              <span className="text-xl font-normal text-[#96918c]">({count} saved)</span>
+            )}
           </h1>
         </div>
 
-        {wishlistItems.length === 0 ? (
+        {!isAuthenticated ? (
+          <div className="flex min-h-[440px] flex-col items-center justify-center rounded-2xl border border-dashed border-[#d8d2ca] bg-white p-8 text-center shadow-sm">
+            <span className="flex h-16 w-16 items-center justify-center rounded-full bg-[#fff0fb] text-[#d600c7]">
+              <Heart size={28} />
+            </span>
+            <h2 className="mt-4 text-xl font-extrabold text-[#171717]">Sign in to view your wishlist</h2>
+            <p className="mt-2 max-w-[360px] text-[12px] leading-5 text-[#77736f]">
+              Your saved pieces are stored with your Mahati account. Sign in to view your curated styles or create an account.
+            </p>
+            <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+              <Link
+                href="/login?redirect=/wishlist"
+                className="gradient-ink inline-flex items-center gap-2 rounded-lg px-5 py-3 text-[11px] font-bold text-white shadow-sm transition-opacity hover:opacity-90"
+              >
+                Sign In to Account <ArrowRight size={14} />
+              </Link>
+              <Link
+                href="/register?redirect=/wishlist"
+                className="inline-flex items-center gap-2 rounded-lg border border-[#ddd8d1] bg-white px-5 py-3 text-[11px] font-bold text-[#2d2b29] shadow-xs transition-colors hover:border-[#4f6bff] hover:text-[#4f6bff]"
+              >
+                Create Account
+              </Link>
+            </div>
+          </div>
+        ) : wishlistItems.length === 0 ? (
           <div className="flex min-h-[440px] flex-col items-center justify-center rounded-2xl border border-dashed border-[#d8d2ca] bg-white p-8 text-center shadow-sm">
             <span className="flex h-16 w-16 items-center justify-center rounded-full bg-[#fff0fb] text-[#d600c7]">
               <Heart size={28} />

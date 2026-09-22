@@ -107,10 +107,6 @@ export default function Footer() {
               <Link href="/account" className="text-[#a9a6a3] hover:text-white transition-colors">
                 Customer Account
               </Link>
-              <span className="text-[#444]">•</span>
-              <Link href="/admin" className="text-[#d4af37]/80 hover:text-[#d4af37] transition-colors">
-                Studio Admin
-              </Link>
             </div>
           </div>
         </div>

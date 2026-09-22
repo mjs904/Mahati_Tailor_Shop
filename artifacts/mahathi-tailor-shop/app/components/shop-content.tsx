@@ -268,14 +268,6 @@ export default function ShopContent() {
                 Book Studio Fitting
               </Link>
             </div>
-            <div className="mt-6 border-t border-[#f0ece7] pt-4">
-              <p className="text-[11px] text-[#96918c]">
-                Store Manager?{' '}
-                <Link href="/admin" className="font-bold text-[#4f6bff] hover:underline">
-                  Open Studio Admin to add products →
-                </Link>
-              </p>
-            </div>
           </div>
         </div>
       </main>
