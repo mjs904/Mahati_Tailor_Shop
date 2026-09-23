@@ -3,11 +3,17 @@ import {
   type InsForgeClient,
 } from "@insforge/sdk";
 
-const insforgeUrl = process.env.NEXT_PUBLIC_INSFORGE_URL?.trim().replace(
-  /\/+$/,
-  '',
-);
-const insforgeAnonKey = process.env.NEXT_PUBLIC_INSFORGE_ANON_KEY?.trim();
+const insforgeUrl = (
+  process.env.NEXT_PUBLIC_INSFORGE_URL ||
+  "https://jk3f7ixk.us-east.insforge.app"
+)
+  .trim()
+  .replace(/\/+$/, "");
+
+const insforgeAnonKey = (
+  process.env.NEXT_PUBLIC_INSFORGE_ANON_KEY ||
+  "ik_f1506c66409346efbb2378b1abc33eae"
+).trim();
 
 let insforgeClient: InsForgeClient | undefined;
 
@@ -175,17 +181,34 @@ export async function ensureProfileId(details: {
   state?: string;
   pincode?: string;
 }): Promise<string> {
-  if (!details.id || details.id === '00000000-0000-0000-0000-000000000000') {
+  const userId = details.id?.trim();
+  if (!userId || userId === '00000000-0000-0000-0000-000000000000') {
     throw new Error('Authentication required: Please sign in or create an account to continue.');
   }
 
-  // Ensure profile details are up to date for this authenticated user
+  // Ensure profile details are in database for this authenticated user
   try {
     const table = getInsforgeTable(INSFORGE_TABLES.profiles);
-    const { data: existing } = await table.select().eq('id', details.id).single();
-    if (!existing) {
+    const { data: existingRows } = await table.select('id').eq('id', userId);
+
+    if (existingRows && existingRows.length > 0) {
+      await table.update({
+        name: details.name?.trim() || undefined,
+        phone: details.phone?.trim() || undefined,
+        address: details.address?.trim() || undefined,
+        city: details.city?.trim() || undefined,
+        state: details.state?.trim() || undefined,
+        pincode: details.pincode?.trim() || undefined,
+      }).eq('id', userId);
+    } else {
+      if (details.email && details.email.trim()) {
+        const { data: byEmail } = await table.select('id').eq('email', details.email.trim());
+        if (byEmail && byEmail.length > 0) {
+          return byEmail[0].id;
+        }
+      }
       await table.insert({
-        id: details.id,
+        id: userId,
         name: details.name?.trim() || 'Boutique Client',
         phone: details.phone?.trim() || '',
         email: details.email?.trim() || '',
@@ -199,7 +222,7 @@ export async function ensureProfileId(details: {
     console.warn('Profile sync notice:', err);
   }
 
-  return details.id;
+  return userId;
 }
 
 /**

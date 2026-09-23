@@ -174,12 +174,12 @@ export default function CheckoutPage() {
           user_id: activeProfileId,
           order_number: orderNumber,
           status: 'pending',
-          payment_status: form.paymentMethod === 'cod' ? 'pending' : 'pending_online',
+          payment_status: 'pending',
           payment_method: form.paymentMethod,
-          subtotal: subtotal,
-          shipping_fee: shipping,
-          total_amount: total,
-          discount: discount,
+          subtotal: Number(subtotal) || 0,
+          shipping_fee: Number(shipping) || 0,
+          total_amount: Number(total) || 0,
+          discount: Number(discount) || 0,
           shipping_name: form.name.trim(),
           shipping_phone: form.phone.trim(),
           shipping_address: form.address.trim(),
@@ -193,24 +193,29 @@ export default function CheckoutPage() {
           INSFORGE_TABLES.orders,
         )
           .insert(orderPayload)
-          .select()
-          .single();
+          .select();
 
         if (orderError) {
-          console.warn('InsForge order insert note:', orderError);
+          throw new Error(getInsforgeErrorMessage(orderError, 'Failed to record your order in the boutique system. Please try again.'));
         }
 
-        if (orderData?.id) {
-          createdOrderId = orderData.id;
+        const createdOrder = Array.isArray(orderData) ? orderData[0] : orderData;
+
+        if (createdOrder?.id) {
+          createdOrderId = createdOrder.id;
 
           // Insert order items
+          const isValidUuid = (val?: string | null) =>
+            typeof val === 'string' &&
+            /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val);
+
           const orderItemsPayload = items.map((item) => ({
-            order_id: orderData.id,
-            product_id: item.productId,
-            product_name: `${item.name} (${item.size})`,
-            price: item.price,
-            quantity: item.quantity,
-            total: item.price * item.quantity,
+            order_id: createdOrder.id,
+            product_id: isValidUuid(item.productId) ? item.productId : null,
+            product_name: `${item.name}${item.size ? ` (${item.size})` : ''}`,
+            price: Number(item.price) || 0,
+            quantity: Number(item.quantity) || 1,
+            total: (Number(item.price) || 0) * (Number(item.quantity) || 1),
           }));
 
           try {

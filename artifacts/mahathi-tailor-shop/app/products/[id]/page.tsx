@@ -9,21 +9,8 @@ export const metadata: Metadata = {
   description: 'View product details from the Mahathi Tailor Shop collection.',
 };
 
-export const dynamicParams = false;
-
-export async function generateStaticParams() {
-  try {
-    const catalog = await fetchCatalog();
-    const ids = catalog.products.map((product) => ({ id: product.id }));
-    const slugs = catalog.products
-      .filter((p) => p.slug && p.slug !== p.id)
-      .map((p) => ({ id: p.slug as string }));
-    const all = [...ids, ...slugs];
-    return all.length > 0 ? all : [{ id: 'preview' }];
-  } catch {
-    return [{ id: 'preview' }];
-  }
-}
+export const dynamic = 'force-dynamic';
+export const dynamicParams = true;
 
 export default function ProductPage() {
   return (

@@ -467,10 +467,12 @@ export async function fetchProductById(id: string): Promise<{
 
   if (!found) {
     try {
-      const { data } = await getInsforgeTable(INSFORGE_TABLES.products)
-        .select()
-        .or(`id.eq.${id},slug.eq.${id}`)
-        .limit(1);
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id.trim());
+      const query = isUuid
+        ? getInsforgeTable(INSFORGE_TABLES.products).select().or(`id.eq.${id.trim()},slug.eq.${id.trim()}`)
+        : getInsforgeTable(INSFORGE_TABLES.products).select().eq('slug', id.trim());
+
+      const { data } = await query.limit(1);
 
       if (data && data.length > 0) {
         const categoryMap = new Map<string, string>();
