@@ -20,6 +20,7 @@ import { formatPrice } from '../data/products';
 import {
   ensureProfileId,
   getCurrentSession,
+  getInsforgeErrorMessage,
   getInsforgeTable,
   INSFORGE_TABLES,
   isInsforgeConfigured,
