@@ -39,12 +39,10 @@ export function useCatalog() {
       void reload();
     };
 
-    if (typeof window !== 'undefined') {
-      window.addEventListener('mahathi-catalog-updated', handleCatalogUpdate);
-      return () => {
-        window.removeEventListener('mahathi-catalog-updated', handleCatalogUpdate);
-      };
-    }
+    window.addEventListener('mahathi-catalog-updated', handleCatalogUpdate);
+    return () => {
+      window.removeEventListener('mahathi-catalog-updated', handleCatalogUpdate);
+    };
   }, [reload]);
 
   return { ...state, reload };

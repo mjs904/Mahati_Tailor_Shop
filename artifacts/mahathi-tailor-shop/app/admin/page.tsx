@@ -255,7 +255,7 @@ export default function AdminPage() {
 
       const { error } = await getInsforgeTable(INSFORGE_TABLES.products).insert(payload);
       if (error) {
-        throw new Error(getInsforgeErrorMessage(error));
+        throw new Error(getInsforgeErrorMessage(error, 'Could not add product.'));
       }
 
       notifySuccess(`Product "${newProdName}" added successfully!`);
@@ -281,7 +281,7 @@ export default function AdminPage() {
     try {
       const { error } = await getInsforgeTable(INSFORGE_TABLES.products).delete().eq('id', id);
       if (error) {
-        throw new Error(getInsforgeErrorMessage(error));
+        throw new Error(getInsforgeErrorMessage(error, 'Could not delete product.'));
       }
       notifySuccess(`Deleted product "${name}"`);
       void refreshData();
@@ -313,7 +313,7 @@ export default function AdminPage() {
 
       const { error } = await getInsforgeTable(INSFORGE_TABLES.categories).insert(payload);
       if (error) {
-        throw new Error(getInsforgeErrorMessage(error));
+        throw new Error(getInsforgeErrorMessage(error, 'Could not add category.'));
       }
 
       notifySuccess(`Category "${newCatName}" added!`);
@@ -338,7 +338,7 @@ export default function AdminPage() {
     try {
       const { error } = await getInsforgeTable(INSFORGE_TABLES.categories).delete().eq('id', id);
       if (error) {
-        throw new Error(getInsforgeErrorMessage(error));
+        throw new Error(getInsforgeErrorMessage(error, 'Could not delete category.'));
       }
       notifySuccess(`Deleted category "${name}"`);
       void refreshData();

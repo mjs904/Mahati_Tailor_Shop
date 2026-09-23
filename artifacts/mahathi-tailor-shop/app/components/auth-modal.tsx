@@ -28,7 +28,7 @@ export default function AuthModal({
       return;
     }
     try {
-      const target = typeof window !== 'undefined' ? `${window.location.origin}${redirectPath}` : undefined;
+      const target = typeof window !== 'undefined' ? `${window.location.origin}${redirectPath}` : redirectPath;
       await signInWithGoogle(target);
     } catch (err: any) {
       alert(`Could not start Google sign in: ${err?.message || 'Error'}`);

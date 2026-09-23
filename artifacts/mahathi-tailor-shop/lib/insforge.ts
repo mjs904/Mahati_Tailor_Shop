@@ -147,7 +147,9 @@ export function logoutUser() {
 export function signInWithGoogle(redirectTo?: string) {
   const targetUrl =
     redirectTo ||
-    (typeof window !== 'undefined' ? `${window.location.origin}/account` : undefined);
+    (typeof window !== 'undefined'
+      ? `${window.location.origin}/account`
+      : '/account');
   return getInsforgeClient().auth.signInWithOAuth('google', {
     redirectTo: targetUrl,
     additionalParams: { prompt: 'select_account' },
@@ -268,7 +270,7 @@ export function isEmailVerificationRequired(error: unknown): boolean {
 
 export function getInsforgeErrorMessage(
   error: unknown,
-  fallback: string,
+  fallback = "An unexpected error occurred. Please try again.",
 ): string {
   const details = getInsforgeErrorDetails(error);
   const normalized = details.toLowerCase();
