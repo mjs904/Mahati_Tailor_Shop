@@ -163,23 +163,38 @@ export default function AdminPage() {
           .order('created_at', { ascending: false });
         setCategories(data || []);
       } else if (tab === 'orders') {
-        const { data: ordData } = await getInsforgeTable(INSFORGE_TABLES.orders)
-          .select('*')
-          .order('created_at', { ascending: false });
-        if (ordData && ordData.length > 0) {
-          try {
-            const { data: itemsData } = await getInsforgeTable(INSFORGE_TABLES.orderItems).select('*');
-            setOrders(
-              (ordData || []).map((o: any) => ({
-                ...o,
-                order_items: (itemsData || []).filter((it: any) => it.order_id === o.id),
-              }))
-            );
-          } catch {
-            setOrders(ordData || []);
+        let loadedOrders = null;
+        try {
+          const apiRes = await fetch('/api/orders?admin=true');
+          if (apiRes.ok) {
+            const resJson = await apiRes.json();
+            if (resJson.success && Array.isArray(resJson.orders)) {
+              loadedOrders = resJson.orders;
+            }
           }
+        } catch {}
+
+        if (loadedOrders !== null) {
+          setOrders(loadedOrders);
         } else {
-          setOrders([]);
+          const { data: ordData } = await getInsforgeTable(INSFORGE_TABLES.orders)
+            .select('*')
+            .order('created_at', { ascending: false });
+          if (ordData && ordData.length > 0) {
+            try {
+              const { data: itemsData } = await getInsforgeTable(INSFORGE_TABLES.orderItems).select('*');
+              setOrders(
+                (ordData || []).map((o: any) => ({
+                  ...o,
+                  order_items: (itemsData || []).filter((it: any) => it.order_id === o.id),
+                }))
+              );
+            } catch {
+              setOrders(ordData || []);
+            }
+          } else {
+            setOrders([]);
+          }
         }
       } else if (tab === 'appointments') {
         const { data } = await getInsforgeTable(INSFORGE_TABLES.appointments)

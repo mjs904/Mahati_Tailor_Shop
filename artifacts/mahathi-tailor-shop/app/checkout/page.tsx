@@ -156,73 +156,109 @@ export default function CheckoutPage() {
         Math.random() * 900 + 100,
       )}`;
 
-      // Save order to InsForge if configured
+      // Save order to boutique system
       let createdOrderId = orderNumber;
 
       if (isInsforgeConfigured()) {
-        const activeProfileId = await ensureProfileId({
-          id: userId,
-          name: form.name,
-          phone: form.phone,
-          email: form.email,
-          address: form.address,
-          city: form.city,
-          state: form.state,
-          pincode: form.pincode,
-        });
+        try {
+          const apiRes = await fetch('/api/orders', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              userId,
+              orderNumber,
+              shipping: {
+                name: form.name,
+                phone: form.phone,
+                email: form.email,
+                address: form.address,
+                city: form.city,
+                state: form.state,
+                pincode: form.pincode,
+                notes: form.notes,
+              },
+              paymentMethod: form.paymentMethod,
+              items,
+              subtotal,
+              shippingFee: shipping,
+              discount,
+              total,
+            }),
+          });
 
-        const orderPayload = {
-          user_id: activeProfileId,
-          order_number: orderNumber,
-          status: 'pending',
-          payment_status: 'pending',
-          payment_method: form.paymentMethod,
-          subtotal: Number(subtotal) || 0,
-          shipping_fee: Number(shipping) || 0,
-          total_amount: Number(total) || 0,
-          discount: Number(discount) || 0,
-          shipping_name: form.name.trim(),
-          shipping_phone: form.phone.trim(),
-          shipping_address: form.address.trim(),
-          shipping_city: form.city.trim(),
-          shipping_state: form.state.trim(),
-          shipping_pincode: form.pincode.trim(),
-          notes: form.notes.trim() || null,
-        };
+          const apiData = await apiRes.json().catch(() => null);
+          if (!apiRes.ok || !apiData?.success) {
+            throw new Error(apiData?.error || 'Failed to record your order in the boutique system. Please try again.');
+          }
 
-        const { data: orderData, error: orderError } = await getInsforgeTable(
-          INSFORGE_TABLES.orders,
-        )
-          .insert(orderPayload)
-          .select();
+          if (apiData?.order?.id) {
+            createdOrderId = apiData.order.id;
+          }
+        } catch (apiErr: any) {
+          console.warn('API route order placement note:', apiErr);
+          // Fallback to direct client SDK insertion if API route is not reachable
+          const activeProfileId = await ensureProfileId({
+            id: userId,
+            name: form.name,
+            phone: form.phone,
+            email: form.email,
+            address: form.address,
+            city: form.city,
+            state: form.state,
+            pincode: form.pincode,
+          });
 
-        if (orderError) {
-          throw new Error(getInsforgeErrorMessage(orderError, 'Failed to record your order in the boutique system. Please try again.'));
-        }
+          const orderPayload = {
+            user_id: activeProfileId,
+            order_number: orderNumber,
+            status: 'pending',
+            payment_status: 'pending',
+            payment_method: form.paymentMethod,
+            subtotal: Number(subtotal) || 0,
+            shipping_fee: Number(shipping) || 0,
+            total_amount: Number(total) || 0,
+            discount: Number(discount) || 0,
+            shipping_name: form.name.trim(),
+            shipping_phone: form.phone.trim(),
+            shipping_address: form.address.trim(),
+            shipping_city: form.city.trim(),
+            shipping_state: form.state.trim(),
+            shipping_pincode: form.pincode.trim(),
+            notes: form.notes.trim() || null,
+          };
 
-        const createdOrder = Array.isArray(orderData) ? orderData[0] : orderData;
+          const { data: orderData, error: orderError } = await getInsforgeTable(
+            INSFORGE_TABLES.orders,
+          )
+            .insert(orderPayload)
+            .select();
 
-        if (createdOrder?.id) {
-          createdOrderId = createdOrder.id;
+          if (orderError) {
+            throw new Error(getInsforgeErrorMessage(orderError, apiErr?.message || 'Failed to record your order in the boutique system. Please try again.'));
+          }
 
-          // Insert order items
-          const isValidUuid = (val?: string | null) =>
-            typeof val === 'string' &&
-            /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val);
+          const createdOrder = Array.isArray(orderData) ? orderData[0] : orderData;
+          if (createdOrder?.id) {
+            createdOrderId = createdOrder.id;
 
-          const orderItemsPayload = items.map((item) => ({
-            order_id: createdOrder.id,
-            product_id: isValidUuid(item.productId) ? item.productId : null,
-            product_name: `${item.name}${item.size ? ` (${item.size})` : ''}`,
-            price: Number(item.price) || 0,
-            quantity: Number(item.quantity) || 1,
-            total: (Number(item.price) || 0) * (Number(item.quantity) || 1),
-          }));
+            const isValidUuid = (val?: string | null) =>
+              typeof val === 'string' &&
+              /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val);
 
-          try {
-            await getInsforgeTable(INSFORGE_TABLES.orderItems).insert(orderItemsPayload);
-          } catch (itemErr) {
-            console.warn('Order items insert note:', itemErr);
+            const orderItemsPayload = items.map((item) => ({
+              order_id: createdOrder.id,
+              product_id: isValidUuid(item.productId) ? item.productId : null,
+              product_name: `${item.name}${item.size ? ` (${item.size})` : ''}`,
+              price: Number(item.price) || 0,
+              quantity: Number(item.quantity) || 1,
+              total: (Number(item.price) || 0) * (Number(item.quantity) || 1),
+            }));
+
+            try {
+              await getInsforgeTable(INSFORGE_TABLES.orderItems).insert(orderItemsPayload);
+            } catch (itemErr) {
+              console.warn('Order items insert note:', itemErr);
+            }
           }
         }
       }
@@ -263,9 +299,20 @@ export default function CheckoutPage() {
               if (response?.razorpay_payment_id) {
                 try {
                   if (createdOrderId) {
+                    await fetch('/api/orders', {
+                      method: 'PATCH',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        orderId: createdOrderId,
+                        paymentStatus: 'paid',
+                        razorpayPaymentId: response.razorpay_payment_id,
+                      }),
+                    }).catch(() => null);
+
                     await getInsforgeTable(INSFORGE_TABLES.orders)
                       .update({ payment_status: 'paid' })
-                      .eq('id', createdOrderId);
+                      .eq('id', createdOrderId)
+                      .catch(() => null);
                   }
                 } catch (updateErr) {
                   console.warn('Payment status update note:', updateErr);

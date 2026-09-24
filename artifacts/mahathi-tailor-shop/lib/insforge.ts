@@ -201,12 +201,6 @@ export async function ensureProfileId(details: {
         pincode: details.pincode?.trim() || undefined,
       }).eq('id', userId);
     } else {
-      if (details.email && details.email.trim()) {
-        const { data: byEmail } = await table.select('id').eq('email', details.email.trim());
-        if (byEmail && byEmail.length > 0) {
-          return byEmail[0].id;
-        }
-      }
       await table.insert({
         id: userId,
         name: details.name?.trim() || 'Boutique Client',
@@ -336,6 +330,19 @@ export function getInsforgeErrorMessage(
     normalized.includes("503")
   ) {
     return "We couldn't reach Mahathi right now. Check your connection and try again.";
+  }
+
+  // If there's an informative message from PostgREST/InsForge/Error, return it
+  if (error && typeof error === "object") {
+    const rawMsg =
+      ("message" in error && typeof error.message === "string" ? error.message : "") ||
+      ("details" in error && typeof error.details === "string" ? error.details : "") ||
+      ("hint" in error && typeof error.hint === "string" ? error.hint : "");
+    if (rawMsg.trim()) {
+      return rawMsg.trim();
+    }
+  } else if (error instanceof Error && error.message) {
+    return error.message;
   }
 
   return fallback;

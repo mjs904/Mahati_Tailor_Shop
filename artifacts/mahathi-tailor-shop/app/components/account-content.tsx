@@ -118,11 +118,26 @@ export default function AccountContent() {
       setLoadingData(true);
       try {
         if (activeTab === 'orders') {
-          const { data } = await getInsforgeTable(INSFORGE_TABLES.orders)
-            .select('*')
-            .eq('user_id', user.id)
-            .order('created_at', { ascending: false });
-          setOrders(data || []);
+          let loadedOrders = null;
+          try {
+            const apiRes = await fetch(`/api/orders?userId=${encodeURIComponent(user.id)}`);
+            if (apiRes.ok) {
+              const resJson = await apiRes.json();
+              if (resJson.success && Array.isArray(resJson.orders)) {
+                loadedOrders = resJson.orders;
+              }
+            }
+          } catch {}
+
+          if (loadedOrders !== null) {
+            setOrders(loadedOrders);
+          } else {
+            const { data } = await getInsforgeTable(INSFORGE_TABLES.orders)
+              .select('*')
+              .eq('user_id', user.id)
+              .order('created_at', { ascending: false });
+            setOrders(data || []);
+          }
         } else if (activeTab === 'appointments') {
           const { data } = await getInsforgeTable(INSFORGE_TABLES.appointments)
             .select()
