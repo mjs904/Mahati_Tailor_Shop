@@ -311,8 +311,7 @@ export default function CheckoutPage() {
 
                     await getInsforgeTable(INSFORGE_TABLES.orders)
                       .update({ payment_status: 'paid' })
-                      .eq('id', createdOrderId)
-                      .catch(() => null);
+                      .eq('id', createdOrderId);
                   }
                 } catch (updateErr) {
                   console.warn('Payment status update note:', updateErr);
