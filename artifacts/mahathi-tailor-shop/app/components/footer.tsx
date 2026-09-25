@@ -115,7 +115,7 @@ export default function Footer() {
       <div className="border-t border-[#2c2c2c] py-5">
         <div className="market-container flex flex-col items-center justify-between gap-2 text-[10px] text-[#777] sm:flex-row">
           <span>© {new Date().getFullYear()} Mahathi Tailor Shop. All rights reserved.</span>
-          <span>Crafted in Hyderabad · Bespoke Elegance</span>
+          <span>Crafted in Malannur · Bespoke Elegance</span>
         </div>
       </div>
     </footer>

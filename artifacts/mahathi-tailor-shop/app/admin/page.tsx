@@ -35,7 +35,7 @@ import { formatPrice } from '../data/products';
 
 type AdminTab = 'products' | 'categories' | 'orders' | 'appointments' | 'requests' | 'customers';
 
-const DEFAULT_ADMIN_PIN = '1998';
+const DEFAULT_ADMIN_PIN = '6263';
 
 export default function AdminPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -102,7 +102,7 @@ export default function AdminPage() {
 
     const expectedPin = process.env.NEXT_PUBLIC_ADMIN_PIN || DEFAULT_ADMIN_PIN;
     if (pin.trim() !== expectedPin) {
-      setPinError('Invalid Admin Security Key. Please enter PIN 1998.');
+      setPinError('Invalid Admin Security PIN. Please try again.');
       return;
     }
 
@@ -486,10 +486,6 @@ export default function AdminPage() {
               Enter your Studio Security PIN to access the management console.
             </p>
 
-            <div className="mt-3 rounded-lg border border-[#e3d8b8] bg-[#fdfaf2] p-2.5 text-[11px] text-[#8a6e1a]">
-              Master Access PIN: <strong className="tracking-widest">1998</strong>
-            </div>
-
             {pinError && (
               <div className="mt-4 rounded-lg border border-[#f1c9c9] bg-[#fff5f5] p-3 text-[11px] font-bold text-[#a64242]">
                 {pinError}
@@ -507,7 +503,7 @@ export default function AdminPage() {
                 maxLength={6}
                 value={pin}
                 onChange={(e) => setPin(e.target.value)}
-                placeholder="1998"
+                placeholder="••••"
                 className="mt-1 h-12 w-full rounded-xl border border-[#ddd8d1] bg-white text-center text-2xl font-bold tracking-[.4em] outline-none focus:border-[#4f6bff]"
               />
             </div>

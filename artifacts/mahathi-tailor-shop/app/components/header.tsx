@@ -76,7 +76,7 @@ export default function Header() {
   return (
     <>
       <div className="gradient-ink px-4 py-2 text-center text-[10px] font-bold uppercase tracking-[.13em] text-white">
-        Complimentary shipping on orders over ₹1,999 <span className="mx-2 opacity-50">•</span> Hyderabad tailoring, shipped across India
+        Mahati Tailor Shop
       </div>
       <header className="sticky top-0 z-40 border-b border-[#e8e4df] bg-[#faf8f5]/95 backdrop-blur-md">
         <div className="market-container flex min-h-[70px] flex-wrap items-center gap-2 py-3 md:h-[70px] md:flex-nowrap md:gap-4 md:py-0">

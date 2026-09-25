@@ -12,7 +12,7 @@ const nextConfig = {
     NEXT_PUBLIC_INSFORGE_ANON_KEY:
       process.env.NEXT_PUBLIC_INSFORGE_ANON_KEY || 'ik_f1506c66409346efbb2378b1abc33eae',
     NEXT_PUBLIC_ADMIN_PIN:
-      process.env.NEXT_PUBLIC_ADMIN_PIN || '1998',
+      process.env.NEXT_PUBLIC_ADMIN_PIN || '6263',
   },
   images: {
     unoptimized: true,
