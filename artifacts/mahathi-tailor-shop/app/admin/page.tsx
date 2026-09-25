@@ -148,20 +148,51 @@ export default function AdminPage() {
 
     try {
       if (tab === 'products') {
-        const [prodRes, catRes] = await Promise.all([
-          getInsforgeTable(INSFORGE_TABLES.products).select().order('created_at', { ascending: false }),
-          getInsforgeTable(INSFORGE_TABLES.categories).select(),
-        ]);
-        setProducts(prodRes.data || []);
-        setCategories(catRes.data || []);
-        if (catRes.data && catRes.data.length > 0 && !newProdCategory) {
-          setNewProdCategory(catRes.data[0].id);
+        let prods = null;
+        let cats = null;
+        try {
+          const [pRes, cRes] = await Promise.all([
+            fetch('/api/products').then((r) => r.json()).catch(() => null),
+            fetch('/api/categories').then((r) => r.json()).catch(() => null),
+          ]);
+          if (pRes?.success && Array.isArray(pRes.products)) prods = pRes.products;
+          if (cRes?.success && Array.isArray(cRes.categories)) cats = cRes.categories;
+        } catch {}
+
+        if (prods !== null) {
+          setProducts(prods);
+        } else {
+          const prodRes = await getInsforgeTable(INSFORGE_TABLES.products).select().order('created_at', { ascending: false });
+          setProducts(prodRes.data || []);
+        }
+
+        if (cats !== null) {
+          setCategories(cats);
+          if (cats.length > 0 && !newProdCategory) {
+            setNewProdCategory(cats[0].id);
+          }
+        } else {
+          const catRes = await getInsforgeTable(INSFORGE_TABLES.categories).select();
+          setCategories(catRes.data || []);
+          if (catRes.data && catRes.data.length > 0 && !newProdCategory) {
+            setNewProdCategory(catRes.data[0].id);
+          }
         }
       } else if (tab === 'categories') {
-        const { data } = await getInsforgeTable(INSFORGE_TABLES.categories)
-          .select()
-          .order('created_at', { ascending: false });
-        setCategories(data || []);
+        let cats = null;
+        try {
+          const cRes = await fetch('/api/categories').then((r) => r.json()).catch(() => null);
+          if (cRes?.success && Array.isArray(cRes.categories)) cats = cRes.categories;
+        } catch {}
+
+        if (cats !== null) {
+          setCategories(cats);
+        } else {
+          const { data } = await getInsforgeTable(INSFORGE_TABLES.categories)
+            .select()
+            .order('created_at', { ascending: false });
+          setCategories(data || []);
+        }
       } else if (tab === 'orders') {
         let loadedOrders = null;
         try {
@@ -268,9 +299,14 @@ export default function AdminPage() {
         is_featured: true,
       };
 
-      const { error } = await getInsforgeTable(INSFORGE_TABLES.products).insert(payload);
-      if (error) {
-        throw new Error(getInsforgeErrorMessage(error, 'Could not add product.'));
+      const apiRes = await fetch('/api/products', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const data = await apiRes.json().catch(() => null);
+      if (!apiRes.ok || !data?.success) {
+        throw new Error(data?.error || 'Could not add product.');
       }
 
       notifySuccess(`Product "${newProdName}" added successfully!`);
@@ -294,9 +330,12 @@ export default function AdminPage() {
   const handleDeleteProduct = async (id: string, name: string) => {
     if (!confirm(`Are you sure you want to delete "${name}"?`)) return;
     try {
-      const { error } = await getInsforgeTable(INSFORGE_TABLES.products).delete().eq('id', id);
-      if (error) {
-        throw new Error(getInsforgeErrorMessage(error, 'Could not delete product.'));
+      const apiRes = await fetch(`/api/products?id=${encodeURIComponent(id)}`, {
+        method: 'DELETE',
+      });
+      const data = await apiRes.json().catch(() => null);
+      if (!apiRes.ok || !data?.success) {
+        throw new Error(data?.error || 'Could not delete product.');
       }
       notifySuccess(`Deleted product "${name}"`);
       void refreshData();
@@ -326,9 +365,14 @@ export default function AdminPage() {
         is_active: true,
       };
 
-      const { error } = await getInsforgeTable(INSFORGE_TABLES.categories).insert(payload);
-      if (error) {
-        throw new Error(getInsforgeErrorMessage(error, 'Could not add category.'));
+      const apiRes = await fetch('/api/categories', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const data = await apiRes.json().catch(() => null);
+      if (!apiRes.ok || !data?.success) {
+        throw new Error(data?.error || 'Could not add category.');
       }
 
       notifySuccess(`Category "${newCatName}" added!`);
@@ -351,9 +395,12 @@ export default function AdminPage() {
   const handleDeleteCategory = async (id: string, name: string) => {
     if (!confirm(`Delete category "${name}"?`)) return;
     try {
-      const { error } = await getInsforgeTable(INSFORGE_TABLES.categories).delete().eq('id', id);
-      if (error) {
-        throw new Error(getInsforgeErrorMessage(error, 'Could not delete category.'));
+      const apiRes = await fetch(`/api/categories?id=${encodeURIComponent(id)}`, {
+        method: 'DELETE',
+      });
+      const data = await apiRes.json().catch(() => null);
+      if (!apiRes.ok || !data?.success) {
+        throw new Error(data?.error || 'Could not delete category.');
       }
       notifySuccess(`Deleted category "${name}"`);
       void refreshData();
@@ -368,33 +415,57 @@ export default function AdminPage() {
   // Update Order Status
   const handleUpdateOrderStatus = async (id: string, status: string) => {
     try {
-      await getInsforgeTable(INSFORGE_TABLES.orders).update({ status }).eq('id', id);
+      const res = await fetch('/api/orders', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId: id, status }),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data?.success) {
+        throw new Error(data?.error || 'Failed to update order status');
+      }
       notifySuccess(`Order updated to "${status}"`);
       void refreshData();
     } catch (err: any) {
-      alert(err.message);
+      alert(`Could not update order status: ${err.message}`);
     }
   };
 
   // Update Appointment Status
   const handleUpdateAppointmentStatus = async (id: string, status: string) => {
     try {
-      await getInsforgeTable(INSFORGE_TABLES.appointments).update({ status }).eq('id', id);
+      const res = await fetch('/api/admin', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ table: 'appointments', id, status }),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data?.success) {
+        throw new Error(data?.error || 'Failed to update appointment status');
+      }
       notifySuccess(`Appointment status set to "${status}"`);
       void refreshData();
     } catch (err: any) {
-      alert(err.message);
+      alert(`Could not update appointment status: ${err.message}`);
     }
   };
 
   // Update Request Status
   const handleUpdateRequestStatus = async (table: string, id: string, status: string) => {
     try {
-      await getInsforgeTable(table as any).update({ status }).eq('id', id);
+      const res = await fetch('/api/admin', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ table, id, status }),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data?.success) {
+        throw new Error(data?.error || 'Failed to update request status');
+      }
       notifySuccess(`Request status updated`);
       void refreshData();
     } catch (err: any) {
-      alert(err.message);
+      alert(`Could not update request status: ${err.message}`);
     }
   };
 
